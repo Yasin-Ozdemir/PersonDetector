@@ -1,0 +1,6 @@
+framework module Pods_PersonDetector {
+  umbrella header "Pods-PersonDetector-umbrella.h"
+
+  export *
+  module * { export * }
+}
