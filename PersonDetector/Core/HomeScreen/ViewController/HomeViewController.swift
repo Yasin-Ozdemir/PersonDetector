@@ -8,13 +8,18 @@
 import UIKit
 import AVFoundation
 import TensorFlowLite
+
+protocol HomeViewControllerDelegate: AnyObject {
+    func showError(title: String, message: String)
+    func addPreviewLayer(previewLayer: AVCaptureVideoPreviewLayer)
+    func showPermissionAlert()
+}
+
+
 final class HomeViewController: UIViewController {
     private var presentedCam = false
-    
-    private var captureSession: AVCaptureSession!
-    private var photoOutput: AVCapturePhotoOutput!
-    private var previewLayer: AVCaptureVideoPreviewLayer!
 
+    private var viewModel: HomeViewModelProtocol
 
     private let cameraPreviewView = UIView()
 
@@ -26,7 +31,7 @@ final class HomeViewController: UIViewController {
         button.addTarget(self, action: #selector(tappedCapture), for: .touchUpInside)
         return button
     }()
-    
+
     private let settingsButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
@@ -45,7 +50,7 @@ final class HomeViewController: UIViewController {
         button.layer.cornerRadius = 15
         return button
     }()
-    
+
     private let restartButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
@@ -55,7 +60,19 @@ final class HomeViewController: UIViewController {
         button.layer.cornerRadius = 15
         return button
     }()
-    
+
+
+    init(viewModel: HomeViewModelProtocol) {
+        self.viewModel = viewModel
+        super.init(nibName: nil, bundle: nil)
+        self.viewModel.viewDelegate = self
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
@@ -63,7 +80,7 @@ final class HomeViewController: UIViewController {
         applyConstraints()
     }
 
-    
+
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         if !presentedCam {
@@ -72,12 +89,12 @@ final class HomeViewController: UIViewController {
         }
     }
 
-    
+
     private func addSubviews() {
-        view.addSubviews(cameraPreviewView, captureButton, settingsButton, doneButton , restartButton)
+        view.addSubviews(cameraPreviewView, captureButton, settingsButton, doneButton, restartButton)
     }
 
-    
+
     private func applyConstraints() {
         cameraPreviewView.translatesAutoresizingMaskIntoConstraints = false
 
@@ -91,17 +108,17 @@ final class HomeViewController: UIViewController {
             captureButton.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
             captureButton.widthAnchor.constraint(equalToConstant: 60),
             captureButton.heightAnchor.constraint(equalToConstant: 60),
-            
+
             settingsButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -30),
             settingsButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 30),
             settingsButton.widthAnchor.constraint(equalToConstant: 60),
             settingsButton.heightAnchor.constraint(equalToConstant: 60),
-            
+
             restartButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 15),
             restartButton.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
             restartButton.heightAnchor.constraint(equalToConstant: 30),
             restartButton.widthAnchor.constraint(equalToConstant: 60),
-            
+
             doneButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 15),
             doneButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -15),
             doneButton.heightAnchor.constraint(equalToConstant: 30),
@@ -109,57 +126,27 @@ final class HomeViewController: UIViewController {
             ])
     }
 
-    
+
     private func checkCam() {
         let status = AVCaptureDevice.authorizationStatus(for: .video)
-
-        switch status {
-        case .authorized: self.setupCam()
-        case .notDetermined: AVCaptureDevice.requestAccess(for: .video) { granted in
-                DispatchQueue.main.async {
-                    granted ? self.setupCam() : self.showPermissionAlert()
-                }
-            }
-        case .denied, .restricted: showPermissionAlert()
-        @unknown default:
-            break
-        }
+        viewModel.checkCamStatus(status: status)
     }
-    
-    
-    private func setupCam() {
-        captureSession = AVCaptureSession()
-        captureSession.sessionPreset = .photo
 
-        guard let camera = AVCaptureDevice.default(for: .video),
-            let input = try? AVCaptureDeviceInput(device: camera),
-            captureSession.canAddInput(input) else {
-            showDefaultError(title: "ERROR!", message: "Camera Input Error.")
+    
+    @objc func tappedCapture() {
+        guard let photoOutput = viewModel.getPhotoOutput() else {
             return
         }
-
-        captureSession.addInput(input)
-
-        photoOutput = AVCapturePhotoOutput()
-        guard captureSession.canAddOutput(photoOutput) else {
-            showDefaultError(title: "ERROR!", message: "Photo Output Could Not Be Added.")
-            return
-        }
-        captureSession.addOutput(photoOutput)
-
-        previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
-        previewLayer.videoGravity = .resizeAspectFill
-        previewLayer.frame = view.bounds
-        cameraPreviewView.layer.addSublayer(previewLayer)
-
-        DispatchQueue.global().async {
-            self.captureSession.startRunning()
-        }
-
+        let settings = AVCapturePhotoSettings()
+        photoOutput.capturePhoto(with: settings, delegate: self)
     }
-    
-    
-    private func showPermissionAlert() {
+}
+
+
+
+extension HomeViewController: HomeViewControllerDelegate {
+
+    func showPermissionAlert() {
         let alert = UIAlertController(title: "Camera Permission Required", message: "Please allow camera access in the settings.", preferredStyle: .alert)
 
         let settingsAction = UIAlertAction(title: "Settings", style: .default) { _ in
@@ -176,17 +163,29 @@ final class HomeViewController: UIViewController {
         present(alert, animated: true)
     }
 
-    
-    @objc func tappedCapture() {
-        let settings = AVCapturePhotoSettings()
-        photoOutput.capturePhoto(with: settings, delegate: self)
+
+    func addPreviewLayer(previewLayer: AVCaptureVideoPreviewLayer) {
+        previewLayer.frame = view.bounds
+        cameraPreviewView.layer.addSublayer(previewLayer)
+
+        guard let session = previewLayer.session else {
+            return
+        }
+        DispatchQueue.global().async {
+            session.startRunning()
+        }
+    }
+
+
+    func showError(title: String, message: String) {
+        self.showDefaultError(title: title, message: message)
     }
 }
 
 
 
 extension HomeViewController: AVCapturePhotoCaptureDelegate {
-    func photoOutput(_ output: AVCapturePhotoOutput,didFinishProcessingPhoto photo: AVCapturePhoto,error: Error?) {
+    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
 
         guard let imageData = photo.fileDataRepresentation(),
             let image = UIImage(data: imageData) else {
