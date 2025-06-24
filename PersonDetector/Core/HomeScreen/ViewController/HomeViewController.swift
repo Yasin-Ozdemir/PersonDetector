@@ -7,12 +7,14 @@
 
 import UIKit
 import AVFoundation
-import TensorFlowLite
 
 protocol HomeViewControllerDelegate: AnyObject {
     func showError(title: String, message: String)
     func addPreviewLayer(previewLayer: AVCaptureVideoPreviewLayer)
     func showPermissionAlert()
+    func showCustomAlert(image: UIImage)
+    func showActivityIndicator()
+    func hideActivityIndicator()
 }
 
 
@@ -78,6 +80,7 @@ final class HomeViewController: UIViewController {
         view.backgroundColor = .systemBackground
         addSubviews()
         applyConstraints()
+        viewModel.viewDidLoad()
     }
 
 
@@ -145,6 +148,26 @@ final class HomeViewController: UIViewController {
 
 
 extension HomeViewController: HomeViewControllerDelegate {
+    func showActivityIndicator() {
+        DispatchQueue.main.async {
+            self.showActivityProgressIndicator()
+        }
+       
+    }
+    
+    func hideActivityIndicator() {
+        DispatchQueue.main.async {
+            self.dismissActivityProgressIndicator()
+        }
+    }
+    
+    func showCustomAlert(image: UIImage) {
+        let customAlert = CustomAlertController(image: image)
+        customAlert.modalTransitionStyle = .crossDissolve
+        customAlert.modalPresentationStyle = .fullScreen
+        self.present(customAlert,animated: true)
+    }
+    
 
     func showPermissionAlert() {
         let alert = UIAlertController(title: "Camera Permission Required", message: "Please allow camera access in the settings.", preferredStyle: .alert)
@@ -186,15 +209,19 @@ extension HomeViewController: HomeViewControllerDelegate {
 
 extension HomeViewController: AVCapturePhotoCaptureDelegate {
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
-
+        
+        guard error == nil else {
+            self.showDefaultError(title: "ERROR", message: error!.localizedDescription)
+            return
+        }
+        
         guard let imageData = photo.fileDataRepresentation(),
             let image = UIImage(data: imageData) else {
             return
         }
 
-        let customAlertController = CustomAlertController(image: image)
-        customAlertController.modalPresentationStyle = .overFullScreen
-        customAlertController.modalTransitionStyle = .crossDissolve
-        present(customAlertController, animated: true)
+        viewModel.detectPerson(with: image)
+      
     }
+    
 }
