@@ -7,7 +7,6 @@
 
 import UIKit
 import AVFoundation
-import CoreImage.CIFilterBuiltins
 
 protocol HomeViewControllerDelegate: AnyObject {
     func showError(title: String, message: String)
