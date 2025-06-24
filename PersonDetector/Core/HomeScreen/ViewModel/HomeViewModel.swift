@@ -7,33 +7,51 @@
 
 import Foundation
 import AVFoundation
+import TensorFlowLite
+import CoreImage
 
-protocol HomeViewModelProtocol{
+protocol HomeViewModelProtocol {
     func getPhotoOutput() -> AVCapturePhotoOutput?
-    func checkCamStatus(status : AVAuthorizationStatus)
-    var viewDelegate : HomeViewControllerDelegate? { get set }
+    func checkCamStatus(status: AVAuthorizationStatus)
+    var viewDelegate: HomeViewControllerDelegate? { get set }
+    func viewDidLoad()
+    func detectPerson(with image: UIImage)
 }
 
 
-final class HomeViewModel: HomeViewModelProtocol{
-    weak var viewDelegate : HomeViewControllerDelegate?
+final class HomeViewModel: HomeViewModelProtocol {
     
-  
+    weak var viewDelegate: HomeViewControllerDelegate?
+    private var personDetector : PersonDetectorProtocol
     private var photoOutput: AVCapturePhotoOutput?
-  
-    func getPhotoOutput() -> AVCapturePhotoOutput?{
+    
+    init(personDetector: PersonDetectorProtocol) {
+        self.personDetector = personDetector
+    }
+    
+    
+    func viewDidLoad() {
+        do {
+            try personDetector.setupYolomodel()
+        }catch{
+            self.viewDelegate?.showError(title: "ERROR!", message: "Model Setup Failed")
+        }
+    }
+    
+    
+    func getPhotoOutput() -> AVCapturePhotoOutput? {
         return self.photoOutput
     }
     
     
-    func checkCamStatus(status : AVAuthorizationStatus){
+    func checkCamStatus(status: AVAuthorizationStatus) {
         switch status {
-        case .authorized: self.setupCaptureSession()
+        case .authorized: self.setupCamera()
         case .notDetermined: AVCaptureDevice.requestAccess(for: .video) { granted in
-                DispatchQueue.main.async {
-                    granted ? self.setupCaptureSession() : self.viewDelegate?.showPermissionAlert()
-                }
+            DispatchQueue.main.async {
+                granted ? self.setupCamera() : self.viewDelegate?.showPermissionAlert()
             }
+        }
         case .denied, .restricted: self.viewDelegate?.showPermissionAlert()
         @unknown default:
             break
@@ -41,32 +59,56 @@ final class HomeViewModel: HomeViewModelProtocol{
     }
     
     
-    private func setupCaptureSession(){
-       let captureSession = AVCaptureSession()
+    private func setupCamera() {
+        let captureSession = AVCaptureSession()
         self.photoOutput = AVCapturePhotoOutput()
         
         captureSession.sessionPreset = .photo
-
+        
         guard let camera = AVCaptureDevice.default(for: .video),
-            let input = try? AVCaptureDeviceInput(device: camera),
-            captureSession.canAddInput(input) else {
+              let input = try? AVCaptureDeviceInput(device: camera),
+              captureSession.canAddInput(input) else {
             self.viewDelegate?.showError(title: "ERROR!", message: "Camera Input Error.")
             return
         }
-
+        
         captureSession.addInput(input)
-
-       
+        
+        
         guard captureSession.canAddOutput(photoOutput!) else {
             self.viewDelegate?.showError(title: "ERROR!", message: "Photo Output Could Not Be Added.")
             return
         }
         captureSession.addOutput(photoOutput!)
-       let  previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
+        let previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
         previewLayer.videoGravity = .resizeAspectFill
         
         viewDelegate?.addPreviewLayer(previewLayer: previewLayer)
     }
     
-  
+    
+    func detectPerson(with image: UIImage) {
+        viewDelegate?.showActivityIndicator()
+        Task{
+            do {
+                let result = try await personDetector.detectPerson(with: image)
+                // BLUR İŞLEMİ
+                self.viewDelegate?.hideActivityIndicator()
+                DispatchQueue.main.async {
+                    self.viewDelegate?.showCustomAlert(image: image)
+                }
+            }catch{
+                self.viewDelegate?.hideActivityIndicator()
+                if error as! PersonDetectorError == PersonDetectorError.detectionFailed{
+                    self.viewDelegate?.showError(title: "ERROR", message: "Person Detection Failed")
+                }
+            }
+            
+        }
+    
+    }
+    
 }
+
+
+
