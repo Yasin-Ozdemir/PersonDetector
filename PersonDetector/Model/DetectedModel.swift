@@ -6,3 +6,9 @@
 //
 
 import Foundation
+import UIKit
+
+struct DetectedModel {
+    let image : UIImage
+    let boxes : [[Float]]
+}

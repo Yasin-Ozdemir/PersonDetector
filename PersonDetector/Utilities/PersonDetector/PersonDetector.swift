@@ -16,7 +16,7 @@ enum PersonDetectorError: Error {
 
 protocol PersonDetectorProtocol {
     func setupYolomodel() throws
-    func detectPerson(with image: UIImage) async throws -> [[Float]]
+    func detectPerson(with image: UIImage) async throws  -> DetectedModel
 }
 
 class PersonDetector: PersonDetectorProtocol {
@@ -33,7 +33,7 @@ class PersonDetector: PersonDetectorProtocol {
             print("Model bulunamadı")
             return
         }
-
+        // interpreter options threadlere bak
         interpreter = try Interpreter(modelPath: modelPath)
         try interpreter?.allocateTensors()
         print("Model başarıyla yüklendi!")
@@ -41,7 +41,7 @@ class PersonDetector: PersonDetectorProtocol {
     }
 
 
-    func detectPerson(with image: UIImage) async throws -> [[Float]]  {
+    func detectPerson(with image: UIImage) async throws -> DetectedModel  {
         let startTime = Date()
         guard let inputData = preprocess(image: image), let interpreter = interpreter else {
                 throw PersonDetectorError.detectionFailed
@@ -62,7 +62,8 @@ class PersonDetector: PersonDetectorProtocol {
                             if Int(cls) == 0 && confidences[i] > 0.3 {
                                 let box = Array(boxes[i * 4..<i * 4 + 4])
                                 detectedBoxes.append(box)
-                                continuation.resume(returning: detectedBoxes)
+                                let detectedModel = DetectedModel(image: setupImage(image)!, boxes: detectedBoxes )
+                                continuation.resume(returning: detectedModel)
                                 return
                             }
                         }
@@ -81,16 +82,24 @@ class PersonDetector: PersonDetectorProtocol {
 
 
     private func preprocess(image: UIImage) -> Data? {
-        guard let resizedImage = image.resize(to: CGSize(width: 640, height: 640)) else {
-            print("Resim yeniden boyutlandırılamadı.")
+        guard let image = setupImage(image) else {
             return nil
         }
 
-        guard let rgbData = resizedImage.rgbData() else {
+        guard let rgbData = image.rgbData() else {
             print("RGB verisi oluşturulamadı.")
             return nil
         }
 
         return rgbData
+    }
+    
+    private func setupImage(_ image: UIImage) -> UIImage? {
+        let fixedImage = image.upright()
+        guard let resizedImage = fixedImage.resize(to: CGSize(width: inputWidth, height: inputHeight)) else {
+            print("Resim yeniden boyutlandırılamadı.")
+            return nil
+        }
+        return resizedImage
     }
 }
