@@ -42,7 +42,7 @@ extension UIImage {
 
         context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
 
-        // RGBA'dan RGB'ye dönüştür (her 4 byte'tan sadece ilk 3'ünü al)
+        
         var rgbBuffer = [UInt8]()
         for i in stride(from: 0, to: rgbaBuffer.count, by: 4) {
             rgbBuffer.append(rgbaBuffer[i])     // R

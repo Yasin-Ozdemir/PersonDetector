@@ -48,7 +48,7 @@ class PersonDetector: PersonDetectorProtocol {
             }
 
            let result = try await withCheckedThrowingContinuation { continuation in
-                DispatchQueue.global(qos: .userInitiated).async {
+            
                     do {
                         try interpreter.copy(inputData, toInputAt: 0)
                         try interpreter.invoke()
@@ -58,7 +58,7 @@ class PersonDetector: PersonDetectorProtocol {
                         let classes = try interpreter.output(at: 2).data.toArray(type: Float32.self)
 
                         var detectedBoxes = [[Float]]()
-                        for (i, cls) in classes.enumerated() {
+                       for (i, cls) in classes.enumerated() {
                             if Int(cls) == 0 && confidences[i] > 0.3 {
                                 let box = Array(boxes[i * 4..<i * 4 + 4])
                                 detectedBoxes.append(box)
@@ -66,12 +66,11 @@ class PersonDetector: PersonDetectorProtocol {
                                 return
                             }
                         }
-
                         continuation.resume(throwing: PersonDetectorError.noPerson)
                     } catch {
                         continuation.resume(throwing: PersonDetectorError.detectionFailed)
                     }
-                }
+               
             }
         let endTime = Date()
             let duration = endTime.timeIntervalSince(startTime)

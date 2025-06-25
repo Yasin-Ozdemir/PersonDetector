@@ -91,7 +91,7 @@ final class HomeViewModel: HomeViewModelProtocol {
         viewDelegate?.showActivityIndicator()
         Task{
             do {
-                let result = try await personDetector.detectPerson(with: image)
+                _ = try await personDetector.detectPerson(with: image)
                 // BLUR İŞLEMİ
                 self.viewDelegate?.hideActivityIndicator()
                 DispatchQueue.main.async {
