@@ -34,7 +34,10 @@ class PersonDetector: PersonDetectorProtocol {
             return
         }
         // interpreter options threadlere bak
-        interpreter = try Interpreter(modelPath: modelPath)
+        var options = Interpreter.Options()
+        options.threadCount = 2  // 1 : 0.711 - 2: 0.58 - 3: 0.56 - 4: 0.54
+       // options.isXNNPackEnabled = true | high-performance kernel library|  MODEL DESTEKLEMİYOR :(
+        interpreter = try Interpreter(modelPath: modelPath , options: options)
         try interpreter?.allocateTensors()
         print("Model başarıyla yüklendi!")
 
@@ -57,12 +60,11 @@ class PersonDetector: PersonDetectorProtocol {
                         let confidences = try interpreter.output(at: 1).data.toArray(type: Float32.self)
                         let classes = try interpreter.output(at: 2).data.toArray(type: Float32.self)
 
-                        var detectedBoxes = [[Float]]()
+                      
                        for (i, cls) in classes.enumerated() {
                             if Int(cls) == 0 && confidences[i] > 0.3 {
-                                let box = Array(boxes[i * 4..<i * 4 + 4])
-                                detectedBoxes.append(box)
-                                let detectedModel = DetectedModel(image: setupImage(image)!, boxes: detectedBoxes )
+                                let box : [Float] = Array(boxes[i * 4..<i * 4 + 4])
+                                let detectedModel = DetectedModel(image: setupImage(image)!, boxes: box)
                                 continuation.resume(returning: detectedModel)
                                 return
                             }

@@ -46,8 +46,8 @@
             filePath = "PersonDetector/Utilities/PersonDetector/PersonDetector.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "45"
-            endingLineNumber = "45"
+            startingLineNumber = "48"
+            endingLineNumber = "48"
             landmarkName = "detectPerson(with:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -62,8 +62,8 @@
             filePath = "PersonDetector/Utilities/PersonDetector/PersonDetector.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "85"
-            endingLineNumber = "85"
+            startingLineNumber = "87"
+            endingLineNumber = "87"
             landmarkName = "preprocess(image:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -78,9 +78,9 @@
             filePath = "PersonDetector/Core/HomeScreen/ViewModel/HomeViewModel.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "120"
-            endingLineNumber = "120"
-            landmarkName = "blur(image:boxes:)"
+            startingLineNumber = "119"
+            endingLineNumber = "119"
+            landmarkName = "blur(image:box:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

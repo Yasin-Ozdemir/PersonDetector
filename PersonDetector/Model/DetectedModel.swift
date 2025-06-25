@@ -10,5 +10,5 @@ import UIKit
 
 struct DetectedModel {
     let image : UIImage
-    let boxes : [[Float]]
+    let boxes : [Float]
 }
