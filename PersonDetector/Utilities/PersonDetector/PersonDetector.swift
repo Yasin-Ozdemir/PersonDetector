@@ -16,7 +16,7 @@ enum PersonDetectorError: Error {
 
 protocol PersonDetectorProtocol {
     func setupYolomodel() throws
-    func detectPerson(with image: UIImage) async throws -> [[Float]]
+    func detectPerson(with image: UIImage) async throws  -> DetectedModel
 }
 
 class PersonDetector: PersonDetectorProtocol {
@@ -33,15 +33,18 @@ class PersonDetector: PersonDetectorProtocol {
             print("Model bulunamadı")
             return
         }
-
-        interpreter = try Interpreter(modelPath: modelPath)
+        // interpreter options threadlere bak
+        var options = Interpreter.Options()
+        options.threadCount = 2  // 1 : 0.711 - 2: 0.58 - 3: 0.56 - 4: 0.54
+       // options.isXNNPackEnabled = true | high-performance kernel library|  MODEL DESTEKLEMİYOR :(
+        interpreter = try Interpreter(modelPath: modelPath , options: options)
         try interpreter?.allocateTensors()
         print("Model başarıyla yüklendi!")
 
     }
 
 
-    func detectPerson(with image: UIImage) async throws -> [[Float]]  {
+    func detectPerson(with image: UIImage) async throws -> DetectedModel  {
         let startTime = Date()
         guard let inputData = preprocess(image: image), let interpreter = interpreter else {
                 throw PersonDetectorError.detectionFailed
@@ -57,12 +60,12 @@ class PersonDetector: PersonDetectorProtocol {
                         let confidences = try interpreter.output(at: 1).data.toArray(type: Float32.self)
                         let classes = try interpreter.output(at: 2).data.toArray(type: Float32.self)
 
-                        var detectedBoxes = [[Float]]()
+                      
                        for (i, cls) in classes.enumerated() {
                             if Int(cls) == 0 && confidences[i] > 0.3 {
-                                let box = Array(boxes[i * 4..<i * 4 + 4])
-                                detectedBoxes.append(box)
-                                continuation.resume(returning: detectedBoxes)
+                                let box : [Float] = Array(boxes[i * 4..<i * 4 + 4])
+                                let detectedModel = DetectedModel(image: setupImage(image)!, boxes: box)
+                                continuation.resume(returning: detectedModel)
                                 return
                             }
                         }
@@ -81,16 +84,24 @@ class PersonDetector: PersonDetectorProtocol {
 
 
     private func preprocess(image: UIImage) -> Data? {
-        guard let resizedImage = image.resize(to: CGSize(width: 640, height: 640)) else {
-            print("Resim yeniden boyutlandırılamadı.")
+        guard let image = setupImage(image) else {
             return nil
         }
 
-        guard let rgbData = resizedImage.rgbData() else {
+        guard let rgbData = image.rgbData() else {
             print("RGB verisi oluşturulamadı.")
             return nil
         }
 
         return rgbData
+    }
+    
+    private func setupImage(_ image: UIImage) -> UIImage? {
+        let fixedImage = image.upright()
+        guard let resizedImage = fixedImage.resize(to: CGSize(width: inputWidth, height: inputHeight)) else {
+            print("Resim yeniden boyutlandırılamadı.")
+            return nil
+        }
+        return resizedImage
     }
 }

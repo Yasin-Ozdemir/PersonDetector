@@ -8,6 +8,20 @@
 import UIKit
 
 extension UIImage {
+
+    func upright() -> UIImage {
+        if self.imageOrientation == .up {
+            return self
+        }
+
+        UIGraphicsBeginImageContextWithOptions(self.size, false, self.scale)
+        self.draw(in: CGRect(origin: .zero, size: self.size))
+        let normalizedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+
+        return normalizedImage ?? self
+    }
+
     func resize(to size: CGSize) -> UIImage? {
         UIGraphicsBeginImageContext(size)
         self.draw(in: CGRect(origin: .zero, size: size))
@@ -29,29 +43,29 @@ extension UIImage {
         let colorSpace = CGColorSpaceCreateDeviceRGB()
 
         guard let context = CGContext(data: &rgbaBuffer,
-                                      width: width,
-                                      height: height,
-                                      bitsPerComponent: 8,
-                                      bytesPerRow: bytesPerRow,
-                                      space: colorSpace,
-                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
-        else {
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow,
+            space: colorSpace,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            else {
             print("Yeni CGContext oluşturulamadı.")
             return nil
         }
 
         context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
 
-        
+
         var rgbBuffer = [UInt8]()
         for i in stride(from: 0, to: rgbaBuffer.count, by: 4) {
-            rgbBuffer.append(rgbaBuffer[i])     // R
+            rgbBuffer.append(rgbaBuffer[i]) // R
             rgbBuffer.append(rgbaBuffer[i + 1]) // G
             rgbBuffer.append(rgbaBuffer[i + 2]) // B
         }
 
         return Data(rgbBuffer)
     }
-    
-   
+
+
 }
