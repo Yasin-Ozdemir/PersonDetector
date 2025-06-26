@@ -5,3 +5,20 @@
   Created by Yasin Özdemir on 26.06.2025.
   
 */
+"alert_title" = "Person has been detected.";
+"alert_body" = "If you keep this image, information will be logged in your visit.";
+"alert_remove_button" = "Remove Image";
+"alert_keep_button" = "Keep Image";
+"ok_button" = "OK";
+"done_button" = "Done";
+"restart_button" = "Restart";
+"camera_permission_title" = "Camera Permission Required";
+"camera_permission_message" = "Please allow camera access in the settings.";
+"settings" = "Settings";
+"cancel" = "Cancel";
+"error" = "ERROR";
+"model_setup_failed" = "Model Setup Failed";
+"camera_input_error" = "Camera Input Error.";
+"photo_output_error" = "Photo Output Could Not Be Added.";
+"person_detection_failed" = "Person Detection Failed";
+

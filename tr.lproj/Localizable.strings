@@ -5,3 +5,19 @@
   Created by Yasin Özdemir on 26.06.2025.
   
 */
+"alert_title" = "Kişi tespit edildi.";
+"alert_body" = "Bu görseli saklamanız halinde ziyaretinize ilişkin bilgiler kaydedilecektir.";
+"alert_remove_button" = "Resmi Kaldır";
+"alert_keep_button" = "Resmi Tut";
+"ok_button" = "Tamam";
+"done_button" = "Bitti";
+"restart_button" = "Yeniden Başlat";
+"camera_permission_title" = "Kamera İzni Gerekli";
+"camera_permission_message" = "Lütfen ayarlardan kamera erişimine izin verin.";
+"settings" = "Ayarlar";
+"cancel" = "İptal";
+"error" = "HATA";
+"model_setup_failed" = "Model Kurulumu Başarısız";
+"camera_input_error" = "Kamera Giriş Hatası.";
+"photo_output_error" = "Fotoğraf Çıktısı Eklenemedi.";
+"person_detection_failed" = "Kişi Algılama Başarısız";

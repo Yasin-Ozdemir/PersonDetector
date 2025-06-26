@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0A450BE40D298A84DC86CE24 /* Pods_PersonDetector.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A21BD4C5832BFA5B5E389A47 /* Pods_PersonDetector.framework */; };
+		EB84544E2E0D63A000199BC2 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = EB84544C2E0D63A000199BC2 /* Localizable.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -15,6 +16,8 @@
 		80506B65DAAC6F3E6CA4F387 /* Pods-PersonDetector.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PersonDetector.release.xcconfig"; path = "Target Support Files/Pods-PersonDetector/Pods-PersonDetector.release.xcconfig"; sourceTree = "<group>"; };
 		A21BD4C5832BFA5B5E389A47 /* Pods_PersonDetector.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_PersonDetector.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		EB3EA4A92E095CAF0011E8BE /* PersonDetector.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PersonDetector.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EB84544D2E0D63A000199BC2 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; usesTabs = 0; };
+		EB84544F2E0D643700199BC2 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/Localizable.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -70,6 +73,7 @@
 		EB3EA4A02E095CAF0011E8BE = {
 			isa = PBXGroup;
 			children = (
+				EB84544C2E0D63A000199BC2 /* Localizable.strings */,
 				EB3EA4AB2E095CAF0011E8BE /* PersonDetector */,
 				EB3EA4AA2E095CAF0011E8BE /* Products */,
 				9B8A65FFE72ACEA92284B9B1 /* Pods */,
@@ -130,6 +134,7 @@
 			knownRegions = (
 				en,
 				Base,
+				tr,
 			);
 			mainGroup = EB3EA4A02E095CAF0011E8BE;
 			minimizedProjectReferenceProxies = 1;
@@ -148,6 +153,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EB84544E2E0D63A000199BC2 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -187,6 +193,18 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		EB84544C2E0D63A000199BC2 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				EB84544D2E0D63A000199BC2 /* en */,
+				EB84544F2E0D643700199BC2 /* tr */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		EB3EA4BD2E095CB00011E8BE /* Debug */ = {
@@ -254,6 +272,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -318,6 +337,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";

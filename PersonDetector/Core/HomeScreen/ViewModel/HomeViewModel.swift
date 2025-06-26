@@ -24,17 +24,24 @@ final class HomeViewModel: HomeViewModelProtocol {
     weak var viewDelegate: HomeViewControllerDelegate?
     private var personDetector: PersonDetectorProtocol
     private var photoOutput: AVCapturePhotoOutput?
+    
+    private let yoloInputWidth : CGFloat
+    private let yoloInputHeight : CGFloat
+    private let yoloConfidenceThreshold : Float
 
-    init(personDetector: PersonDetectorProtocol) {
+    init(personDetector: PersonDetectorProtocol ,yoloInputWidth: CGFloat, yoloInputHeight: CGFloat, yoloConfidenceThreshold: Float) {
         self.personDetector = personDetector
+        self.yoloInputWidth = yoloInputWidth
+        self.yoloInputHeight = yoloInputHeight
+        self.yoloConfidenceThreshold = yoloConfidenceThreshold
     }
 
 
     func viewDidLoad() {
         do {
-            try personDetector.setupYolomodel()
+            try personDetector.setupYolomodel(inputWidth: yoloInputWidth, inputHeight: yoloInputHeight, confidenceThreshold: yoloConfidenceThreshold)
         } catch {
-            self.viewDelegate?.showError(title: "ERROR!", message: "Model Setup Failed")
+            self.viewDelegate?.showError(title: "error".localized, message: "model_setup_failed".localized)
         }
     }
 
@@ -68,7 +75,7 @@ final class HomeViewModel: HomeViewModelProtocol {
         guard let camera = AVCaptureDevice.default(for: .video),
             let input = try? AVCaptureDeviceInput(device: camera),
             captureSession.canAddInput(input) else {
-            self.viewDelegate?.showError(title: "ERROR!", message: "Camera Input Error.")
+            self.viewDelegate?.showError(title: "error".localized, message: "camera_input_error".localized)
             return
         }
 
@@ -76,7 +83,7 @@ final class HomeViewModel: HomeViewModelProtocol {
 
 
         guard captureSession.canAddOutput(photoOutput!) else {
-            self.viewDelegate?.showError(title: "ERROR!", message: "Photo Output Could Not Be Added.")
+            self.viewDelegate?.showError(title: "error".localized, message: "photo_output_error".localized)
             return
         }
         captureSession.addOutput(photoOutput!)
@@ -88,14 +95,14 @@ final class HomeViewModel: HomeViewModelProtocol {
 
 
     func detectPerson(with image: UIImage) {
-        print(image.size)
         viewDelegate?.showActivityIndicator()
         // task seviyelerine bak High : 0.708 , userInitiated : 0.675, utility : 2.03 , low: 2.05 , medium: 0.71
         Task(priority: .high) {
             do {
                 let result = try await personDetector.detectPerson(with: image)
+              
 
-                guard let bluredImage = self.blur(image: result.image, box: result.boxes) else {
+                guard let bluredImage = self.blur(image: result.image, rect: result.rect, defaultImageSize: image.size) else {
                     return
                 }
                 DispatchQueue.main.async {
@@ -106,7 +113,7 @@ final class HomeViewModel: HomeViewModelProtocol {
             } catch {
                 self.viewDelegate?.hideActivityIndicator()
                 if error as! PersonDetectorError == PersonDetectorError.detectionFailed {
-                    self.viewDelegate?.showError(title: "ERROR", message: "Person Detection Failed")
+                    self.viewDelegate?.showError(title: "error".localized, message: "person_detection_failed".localized)
                 }
             }
 
@@ -115,21 +122,21 @@ final class HomeViewModel: HomeViewModelProtocol {
     }
 
 
-   private func blur(image: UIImage, box: [Float]) -> UIImage? {
-        guard let resized = image.resize(to: CGSize(width: 3024.0, height: 4032.0)),
+    private func blur(image: UIImage, rect: CGRect, defaultImageSize: CGSize) -> UIImage? {
+        guard let resized = image.resize(to: defaultImageSize),
             let ciImage = CIImage(image: resized) else {
             return nil
         }
 
         let context = CIContext()
         var outputImage = ciImage
-
-        let rect = self.calculateRect(from: box)
-
-        let cropped = ciImage.cropped(to: rect)
+       
+        let newRect = calculateRect(from: rect, with: defaultImageSize)
+       
+        let cropped = ciImage.cropped(to: newRect)
         let blurred = cropped
             .applyingFilter("CIGaussianBlur", parameters: [kCIInputRadiusKey: 40])
-            .cropped(to: rect)
+            .cropped(to: newRect)
 
 
         outputImage = blurred.composited(over: outputImage)
@@ -142,55 +149,15 @@ final class HomeViewModel: HomeViewModelProtocol {
         return nil
     }
 
-
-    /* private func blurWithMask(image: UIImage, boxes: [[Float]]) -> UIImage? {
-        guard let resized = image.resize(to: CGSize(width: 3024.0, height: 4032.0)),
-              let ciImage = CIImage(image: resized) else {
-            return nil
-        }
+    
+    private func calculateRect(from rect: CGRect , with imageSize : CGSize) -> CGRect {
+        let xRatio = (imageSize.width / self.yoloInputWidth)
+        let yRatio = (imageSize.height / self.yoloInputHeight)
         
-        let context = CIContext()
-        var outputImage = ciImage
-               
-        let blurFilter = CIFilter(name: "CIGaussianBlur")!
-        blurFilter.setValue(ciImage, forKey: kCIInputImageKey)
-        blurFilter.setValue(40, forKey: kCIInputRadiusKey)
-        
-        guard let blurredImage = blurFilter.outputImage else { return nil }
-        
-        var maskImage: CIImage?
-        
-        for box in boxes {
-            let rect = calculateRect(from: box)
-            let rectMask = CIImage(color: CIColor.white).cropped(to: rect)
-            
-            if maskImage == nil {
-                maskImage = rectMask
-            } else {
-                maskImage = rectMask.composited(over: maskImage!)
-            }
-        }
-        
-        guard let finalMask = maskImage else { return nil }
-        
-        let blendFilter = CIFilter(name: "CIBlendWithMask")!
-        blendFilter.setValue(blurredImage, forKey: kCIInputImageKey)
-        blendFilter.setValue(ciImage, forKey: kCIInputBackgroundImageKey)
-        blendFilter.setValue(finalMask, forKey: kCIInputMaskImageKey)
-        
-        guard let result = blendFilter.outputImage,
-              let finalCG = context.createCGImage(result, from: result.extent) else {
-            return nil
-        }
-        
-        return UIImage(cgImage: finalCG)
-    }*/
-
-    private func calculateRect(from box: [Float]) -> CGRect {
-        let ymin = CGFloat(box[0]) * 6.3
-        let xmin = CGFloat(box[1]) * 4.725
-        let ymax = CGFloat(box[2]) * 6.3
-        let xmax = CGFloat(box[3]) * 4.725
+        let xmin = rect.minX * xRatio
+        let ymin = rect.minY  * yRatio
+        let xmax = rect.maxX * xRatio
+        let ymax = rect.maxY  * yRatio
 
         return CGRect(x: xmin, y: ymin, width: xmax - xmin, height: ymax - ymin)
     }

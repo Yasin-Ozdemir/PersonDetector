@@ -15,70 +15,79 @@ enum PersonDetectorError: Error {
 }
 
 protocol PersonDetectorProtocol {
-    func setupYolomodel() throws
-    func detectPerson(with image: UIImage) async throws  -> DetectedModel
+    func setupYolomodel(inputWidth: CGFloat, inputHeight: CGFloat, confidenceThreshold: Float) throws
+    func detectPerson(with image: UIImage) async throws -> DetectedModel
 }
 
 class PersonDetector: PersonDetectorProtocol {
     private var interpreter: Interpreter?
 
-    private let inputWidth = 640
-    private let inputHeight = 640
-    private let confidenceThreshold: Float = 0.3
-    private let maxDetections = 8400
-
-
-    func setupYolomodel() throws {
+    private var inputWidth : CGFloat = 0
+    private var inputHeight : CGFloat = 0
+    private var confidenceThreshold: Float = 0
+    
+    func setupYolomodel(inputWidth: CGFloat, inputHeight: CGFloat, confidenceThreshold: Float) throws {
         guard let modelPath = Bundle.main.path(forResource: "person-det 1", ofType: "tflite") else {
             print("Model bulunamadı")
             return
         }
         // interpreter options threadlere bak
         var options = Interpreter.Options()
-        options.threadCount = 2  // 1 : 0.711 - 2: 0.58 - 3: 0.56 - 4: 0.54
-       // options.isXNNPackEnabled = true | high-performance kernel library|  MODEL DESTEKLEMİYOR :(
-        interpreter = try Interpreter(modelPath: modelPath , options: options)
+        options.threadCount = 2 // 1 : 0.711 - 2: 0.58 - 3: 0.56 - 4: 0.54
+        // options.isXNNPackEnabled = true | high-performance kernel library|  MODEL DESTEKLEMİYOR :(
+        interpreter = try Interpreter(modelPath: modelPath, options: options)
         try interpreter?.allocateTensors()
+        
+        self.inputWidth = inputWidth
+        self.inputHeight = inputHeight
+        self.confidenceThreshold = confidenceThreshold
         print("Model başarıyla yüklendi!")
 
     }
 
 
-    func detectPerson(with image: UIImage) async throws -> DetectedModel  {
+    func detectPerson(with image: UIImage) async throws -> DetectedModel {
         let startTime = Date()
         guard let inputData = preprocess(image: image), let interpreter = interpreter else {
-                throw PersonDetectorError.detectionFailed
-            }
+            throw PersonDetectorError.detectionFailed
+        }
 
-           let result = try await withCheckedThrowingContinuation { continuation in
-            
-                    do {
-                        try interpreter.copy(inputData, toInputAt: 0)
-                        try interpreter.invoke()
+        let result = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<DetectedModel, Error>) in
 
-                        let boxes = try interpreter.output(at: 0).data.toArray(type: Float32.self)
-                        let confidences = try interpreter.output(at: 1).data.toArray(type: Float32.self)
-                        let classes = try interpreter.output(at: 2).data.toArray(type: Float32.self)
+            do {
+                try interpreter.copy(inputData, toInputAt: 0)
+                try interpreter.invoke()
 
-                      
-                       for (i, cls) in classes.enumerated() {
-                            if Int(cls) == 0 && confidences[i] > 0.3 {
-                                let box : [Float] = Array(boxes[i * 4..<i * 4 + 4])
-                                let detectedModel = DetectedModel(image: setupImage(image)!, boxes: box)
-                                continuation.resume(returning: detectedModel)
-                                return
-                            }
-                        }
-                        continuation.resume(throwing: PersonDetectorError.noPerson)
-                    } catch {
-                        continuation.resume(throwing: PersonDetectorError.detectionFailed)
+                let boxes = try interpreter.output(at: 0).data.toArray(type: Float32.self)
+                let confidences = try interpreter.output(at: 1).data.toArray(type: Float32.self)
+
+                var predictions: [Detection] = []
+
+                for i in 0..<confidences.count {
+                    if confidences[i] > 0.3 {
+                        let box = Array(boxes[i * 4..<i * 4 + 4])
+                        let rect = CGRect(x: CGFloat(box[0]),y: CGFloat(box[1]),width: CGFloat(box[2] - box[0]),height: CGFloat(box[3] - box[1]))
+
+                        predictions.append(Detection(score: confidences[i], rect: rect))
                     }
+                }
+                print("NMS işlemi öncesi: ", predictions)
+                let finalPredictions = nonMaximumSuppression(predictions: predictions)
+                print("NMS işlemi sonrası: " , finalPredictions)
                
+                
+                let detectedModel = DetectedModel(image: setupImage(image)!, rect: finalPredictions.first!.rect)
+                continuation.resume(returning: detectedModel)
+
+            } catch {
+                continuation.resume(throwing: PersonDetectorError.detectionFailed)
             }
+
+        }
         let endTime = Date()
-            let duration = endTime.timeIntervalSince(startTime)
-            print("Süre: \(duration) saniye")
-        
+        let duration = endTime.timeIntervalSince(startTime)
+        print("Süre: \(duration) saniye")
+
         return result
     }
 
@@ -95,7 +104,7 @@ class PersonDetector: PersonDetectorProtocol {
 
         return rgbData
     }
-    
+
     private func setupImage(_ image: UIImage) -> UIImage? {
         let fixedImage = image.upright()
         guard let resizedImage = fixedImage.resize(to: CGSize(width: inputWidth, height: inputHeight)) else {
@@ -104,4 +113,31 @@ class PersonDetector: PersonDetectorProtocol {
         }
         return resizedImage
     }
+
+    private func nonMaximumSuppression(predictions: [Detection], iouThreshold: Float = 0.3) -> [Detection] {
+        var sorted = predictions.sorted { $0.score > $1.score }
+       
+        /* Birden fazla insan varsa iou işlemi yapılarak best confidence sahip bounding box ile üst üste gelmeyen bounding boxları listede tutar (farklı insan), üst üste gelen boxları listeden çıkarır (aynı insana ait diğer bounding boxlar).*/
+        
+        var result : [Detection] = []
+         
+        while !sorted.isEmpty {
+            let best = sorted.removeFirst()
+            result.append(best)
+
+            sorted = sorted.filter {
+                iou($0.rect, best.rect) > iouThreshold
+            }
+        }
+
+        return result
+    }
+
+    private func iou(_ a: CGRect, _ b: CGRect) -> Float {
+        let intersection = a.intersection(b)
+        let intersectionArea = intersection.width * intersection.height
+        let unionArea = a.width * a.height + b.width * b.height - intersectionArea
+        return Float(intersectionArea / unionArea)
+    }
+
 }

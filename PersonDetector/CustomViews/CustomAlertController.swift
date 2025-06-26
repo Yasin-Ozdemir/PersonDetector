@@ -8,8 +8,8 @@
 import Foundation
 import UIKit
 final class CustomAlertController : UIViewController{
-    private let alertTitle = "Person has been detected."
-    private let alertBody = "If you keep this image, information will be logged in your visit."
+    private let alertTitle = "alert_title".localized
+    private let alertBody = "alert_body".localized
     
     private let container : UIView = {
        let view = UIView()
@@ -49,7 +49,7 @@ final class CustomAlertController : UIViewController{
     
     private let removeButton : UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("Remove Image", for: .normal)
+        button.setTitle("alert_remove_button".localized, for: .normal)
         button.setTitleColor(.systemBlue, for: .normal)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.addTarget(self, action: #selector(dismissAlert), for: .touchUpInside)
@@ -59,7 +59,7 @@ final class CustomAlertController : UIViewController{
     
     private let keepButton : UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("Keep Image", for: .normal)
+        button.setTitle("alert_keep_button".localized, for: .normal)
         button.setTitleColor(.systemBlue, for: .normal)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.addTarget(self, action: #selector(dismissAlert), for: .touchUpInside)

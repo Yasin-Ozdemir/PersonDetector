@@ -46,7 +46,7 @@ final class HomeViewController: UIViewController {
     private let doneButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.setTitle("Done", for: .normal)
+        button.setTitle("done_button".localized, for: .normal)
         button.backgroundColor = .secondaryLabel
         button.setTitleColor(.secondarySystemBackground, for: .normal)
         button.layer.cornerRadius = 15
@@ -56,7 +56,7 @@ final class HomeViewController: UIViewController {
     private let restartButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.setTitle("Restart", for: .normal)
+        button.setTitle("restart_button".localized, for: .normal)
         button.backgroundColor = .secondarySystemBackground
         button.setTitleColor(.secondaryLabel, for: .normal)
         button.layer.cornerRadius = 15
@@ -113,14 +113,14 @@ final class HomeViewController: UIViewController {
             captureButton.heightAnchor.constraint(equalToConstant: 60),
 
             settingsButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -30),
-            settingsButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 30),
-            settingsButton.widthAnchor.constraint(equalToConstant: 60),
+            settingsButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 40),
+            settingsButton.widthAnchor.constraint(equalToConstant: 90),
             settingsButton.heightAnchor.constraint(equalToConstant: 60),
 
             restartButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 15),
             restartButton.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
-            restartButton.heightAnchor.constraint(equalToConstant: 30),
-            restartButton.widthAnchor.constraint(equalToConstant: 60),
+            restartButton.heightAnchor.constraint(equalToConstant: 40),
+            restartButton.widthAnchor.constraint(equalToConstant: 90),
 
             doneButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 15),
             doneButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -15),
@@ -170,15 +170,15 @@ extension HomeViewController: HomeViewControllerDelegate {
     
 
     func showPermissionAlert() {
-        let alert = UIAlertController(title: "Camera Permission Required", message: "Please allow camera access in the settings.", preferredStyle: .alert)
+        let alert = UIAlertController(title: "camera_permission_title".localized, message: "camera_permission_message".localized, preferredStyle: .alert)
 
-        let settingsAction = UIAlertAction(title: "Settings", style: .default) { _ in
+        let settingsAction = UIAlertAction(title: "settings".localized, style: .default) { _ in
             if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
                 UIApplication.shared.open(settingsURL)
             }
         }
 
-        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
+        let cancelAction = UIAlertAction(title: "cancel".localized, style: .cancel)
 
         alert.addAction(settingsAction)
         alert.addAction(cancelAction)
@@ -211,7 +211,7 @@ extension HomeViewController: AVCapturePhotoCaptureDelegate {
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         
         guard error == nil else {
-            self.showDefaultError(title: "ERROR", message: error!.localizedDescription)
+            self.showDefaultError(title: "error".localized, message: error!.localizedDescription)
             return
         }
         
