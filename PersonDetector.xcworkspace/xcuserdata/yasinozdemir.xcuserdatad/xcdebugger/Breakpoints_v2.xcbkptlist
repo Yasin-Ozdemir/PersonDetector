@@ -39,22 +39,6 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "6A9AB973-B8F8-4BE6-A080-28EC04E83EC7"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "PersonDetector/Utilities/PersonDetector/PersonDetector.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "96"
-            endingLineNumber = "96"
-            landmarkName = "preprocess(image:)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
             uuid = "84E72B41-10BE-47F7-8E91-860C15A0B2CC"
             shouldBeEnabled = "No"
             ignoreCount = "0"
@@ -65,22 +49,6 @@
             startingLineNumber = "126"
             endingLineNumber = "126"
             landmarkName = "blur(image:rect:defaultImageSize:)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "85C04FCA-A2E6-4914-A138-B054B49EDBC4"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "PersonDetector/Utilities/PersonDetector/PersonDetector.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "55"
-            endingLineNumber = "55"
-            landmarkName = "detectPerson(with:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -114,6 +82,22 @@
             endingLineNumber = "130"
             landmarkName = "blur(image:rect:defaultImageSize:)"
             landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "81AF63DF-D84D-408A-A380-31953D2A4BD3"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../../../var/folders/2t/q7_m_5fs165dz9tl0_m7tspr0000gn/T/xcode/scm/PersonDetector/6114ea3abf7fd6cdd19570f0a5ddae8e8b05389d/PersonDetector/Core/ListScreen/View/ListCollectionViewCell.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "8"
+            endingLineNumber = "8"
+            landmarkName = "unknown"
+            landmarkType = "0">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

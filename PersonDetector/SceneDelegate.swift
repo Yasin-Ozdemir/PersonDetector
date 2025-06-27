@@ -18,7 +18,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
         guard let scene = (scene as? UIWindowScene) else { return }
         let window = UIWindow(windowScene: scene)
-        window.rootViewController = HomeViewController(viewModel: HomeViewModel(personDetector: PersonDetector() , yoloInputWidth: 640 , yoloInputHeight: 640, yoloConfidenceThreshold: 0.3))
+      
+        window.rootViewController =  UINavigationController(rootViewController: ListViewController(viewModel: ListViewModel()))
         window.makeKeyAndVisible()
         self.window = window
     }

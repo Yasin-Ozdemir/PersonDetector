@@ -19,7 +19,7 @@ protocol PersonDetectorProtocol {
     func detectPerson(with image: UIImage) async throws -> DetectedModel
 }
 
-class PersonDetector: PersonDetectorProtocol {
+final class PersonDetector: PersonDetectorProtocol {
     private var interpreter: Interpreter?
 
     private var inputWidth : CGFloat = 0
