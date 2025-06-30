@@ -17,7 +17,7 @@ final class GenericCollectionView<Cell : UICollectionViewCell> : UICollectionVie
     private var cellID : String
     private var layout : UICollectionViewFlowLayout
     
-    init(config: @escaping (Int, UICollectionViewCell) -> Void, numberOfItem: Int, selectionHandler: @escaping (Int) -> Void, cellID: String, layout: UICollectionViewFlowLayout) {
+    init(config: @escaping (Int, Cell) -> Void, numberOfItem: Int, selectionHandler: @escaping (Int) -> Void, cellID: String, layout: UICollectionViewFlowLayout) {
         
         self.config = config
         self.numberOfItem = numberOfItem
@@ -46,6 +46,7 @@ final class GenericCollectionView<Cell : UICollectionViewCell> : UICollectionVie
         guard let cell = self.dequeueReusableCell(withReuseIdentifier: cellID, for: indexPath) as? Cell else {
             return UICollectionViewCell()
         }
+        
         self.config(indexPath.item, cell)
         return cell
     }

@@ -11,12 +11,12 @@ import UIKit
 final class ListCollectionViewCell: UICollectionViewCell {
     static let cellID = "ListCollectionViewCell"
     private var personDetect : Bool = false
+    
     private let imageView : UIImageView = {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFit
         imageView.clipsToBounds = true
         imageView.translatesAutoresizingMaskIntoConstraints = false
-        imageView.backgroundColor = .gray
         return imageView
     }()
     
@@ -54,7 +54,7 @@ final class ListCollectionViewCell: UICollectionViewCell {
             self.dateLabel.bottomAnchor.constraint(equalTo: self.bottomAnchor, constant: -5),
             self.dateLabel.centerXAnchor.constraint(equalTo: self.centerXAnchor),
             
-            self.imageView.topAnchor.constraint(equalTo: self.topAnchor),
+            self.imageView.topAnchor.constraint(equalTo: self.topAnchor, constant: 10),
             self.imageView.leadingAnchor.constraint(equalTo: self.leadingAnchor),
             self.imageView.trailingAnchor.constraint(equalTo: self.trailingAnchor),
             self.imageView.bottomAnchor.constraint(equalTo: self.dateLabel.topAnchor, constant: -5)
@@ -62,10 +62,22 @@ final class ListCollectionViewCell: UICollectionViewCell {
         ])
     }
     
-    func configureCell(personDetect: Bool , image: UIImage, date: String){
-        self.personDetect = personDetect
-        self.imageView.image = image
-        self.dateLabel.text = date
+    // optional
+    func configureCell(with listModel : ListModel?){
+        guard let listModel  = listModel else { return }
+        self.personDetect = listModel.isPersonDetected
+        self.imageView.image = UIImage(data: listModel.imageData)
+        self.dateLabel.text = listModel.date
+        
+        changeBackgroundColor()
+    }
+    
+    private func changeBackgroundColor(){
+        if self.personDetect {
+            self.backgroundColor = .systemRed.withAlphaComponent(0.3)
+        } else {
+            self.backgroundColor = .secondarySystemBackground
+        }
     }
     
 }

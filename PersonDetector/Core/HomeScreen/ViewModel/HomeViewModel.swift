@@ -16,6 +16,7 @@ protocol HomeViewModelProtocol {
     var viewDelegate: HomeViewControllerDelegate? { get set }
     func viewDidLoad()
     func detectPerson(with image: UIImage)
+    func saveImageToDB(image: UIImage, date: String, isPersonDetected: Bool)
 }
 
 
@@ -23,17 +24,16 @@ final class HomeViewModel: HomeViewModelProtocol {
 
     weak var viewDelegate: HomeViewControllerDelegate?
     private var personDetector: PersonDetectorProtocol
+    private let databaseManager : DatabaseManagerProtocol
     private var photoOutput: AVCapturePhotoOutput?
     
-    private let yoloInputWidth : CGFloat
-    private let yoloInputHeight : CGFloat
-    private let yoloConfidenceThreshold : Float
+    private let yoloInputWidth : CGFloat = 640
+    private let yoloInputHeight : CGFloat = 640
+    private let yoloConfidenceThreshold : Float = 0.3
 
-    init(personDetector: PersonDetectorProtocol ,yoloInputWidth: CGFloat, yoloInputHeight: CGFloat, yoloConfidenceThreshold: Float) {
+    init(personDetector: PersonDetectorProtocol , databaseManager : DatabaseManagerProtocol ) {
         self.personDetector = personDetector
-        self.yoloInputWidth = yoloInputWidth
-        self.yoloInputHeight = yoloInputHeight
-        self.yoloConfidenceThreshold = yoloConfidenceThreshold
+        self.databaseManager = databaseManager
     }
 
 
@@ -105,6 +105,7 @@ final class HomeViewModel: HomeViewModelProtocol {
                 guard let bluredImage = self.blur(image: result.image, rect: result.rect, defaultImageSize: image.size) else {
                     return
                 }
+              //  @Sendable protocol ne araştır
                 DispatchQueue.main.async {
                     self.viewDelegate?.hideActivityIndicator()
                     self.viewDelegate?.showCustomAlert(image: bluredImage)
@@ -114,6 +115,8 @@ final class HomeViewModel: HomeViewModelProtocol {
                 self.viewDelegate?.hideActivityIndicator()
                 if error as! PersonDetectorError == PersonDetectorError.detectionFailed {
                     self.viewDelegate?.showError(title: "error".localized, message: "person_detection_failed".localized)
+                }else if error as! PersonDetectorError == PersonDetectorError.noPerson {
+                    self.saveImageToDB(image: image, date: Date.getCurrentDay(), isPersonDetected: false)
                 }
             }
 
@@ -162,6 +165,25 @@ final class HomeViewModel: HomeViewModelProtocol {
         return CGRect(x: xmin, y: ymin, width: xmax - xmin, height: ymax - ymin)
     }
 
+    
+     func saveImageToDB(image: UIImage, date: String, isPersonDetected: Bool) {
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            return
+        }
+        let listModel = ListModel(date: date, imageData: imageData , isPersonDetected: isPersonDetected)
+        
+        Task {
+            do {
+                try await self.databaseManager.save(listModel)
+                viewDelegate?.showError(title: "Başarılı", message: "Fotoğraf Başarıyla Kayıt Edildi.")
+                NotificationCenter.default.post(name: NSNotification.Name("PhotoSaved"), object: nil)
+            } catch {
+                viewDelegate?.showError(title: "error".localized, message: "Kayıt Edilemedi.")
+            }
+            
+        }
+       
+    }
 
 }
 

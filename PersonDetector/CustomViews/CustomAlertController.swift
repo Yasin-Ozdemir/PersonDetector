@@ -10,7 +10,7 @@ import UIKit
 final class CustomAlertController : UIViewController{
     private let alertTitle = "alert_title".localized
     private let alertBody = "alert_body".localized
-    
+    private var keepButtonTapped : (() -> Void)!
     private let container : UIView = {
        let view = UIView()
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -62,7 +62,7 @@ final class CustomAlertController : UIViewController{
         button.setTitle("alert_keep_button".localized, for: .normal)
         button.setTitleColor(.systemBlue, for: .normal)
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.addTarget(self, action: #selector(dismissAlert), for: .touchUpInside)
+        button.addTarget(self, action: #selector(keepButtonClicked), for: .touchUpInside)
         button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .regular)
         return button
     }()
@@ -75,9 +75,10 @@ final class CustomAlertController : UIViewController{
         fatalError("init(coder:) has not been implemented")
     }
     
-    convenience init(image : UIImage) {
+    convenience init(image : UIImage, keepButtonTapped : @escaping (() -> Void)) {
         self.init(nibName: nil, bundle: nil)
         self.imageView.image = image
+        self.keepButtonTapped = keepButtonTapped
     }
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -128,6 +129,12 @@ final class CustomAlertController : UIViewController{
     }
     
     @objc private func dismissAlert(){
+        self.dismiss(animated: true)
+    }
+    
+    @objc private func keepButtonClicked() {
+    
+        keepButtonTapped()
         self.dismiss(animated: true)
     }
 }

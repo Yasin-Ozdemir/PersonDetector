@@ -45,6 +45,7 @@ final class PersonDetector: PersonDetectorProtocol {
 
     }
 
+    //
 
     func detectPerson(with image: UIImage) async throws -> DetectedModel {
         let startTime = Date()
@@ -62,18 +63,24 @@ final class PersonDetector: PersonDetectorProtocol {
                 let confidences = try interpreter.output(at: 1).data.toArray(type: Float32.self)
 
                 var predictions: [Detection] = []
-
+                
+                // high order convert
                 for i in 0..<confidences.count {
                     if confidences[i] > 0.3 {
                         let box = Array(boxes[i * 4..<i * 4 + 4])
                         let rect = CGRect(x: CGFloat(box[0]),y: CGFloat(box[1]),width: CGFloat(box[2] - box[0]),height: CGFloat(box[3] - box[1]))
-
+                        
+                        // append kullanımı dezavantaj map ile kıyasla başka seçenekleri düşün
                         predictions.append(Detection(score: confidences[i], rect: rect))
                     }
                 }
-                print("NMS işlemi öncesi: ", predictions)
+                
+                guard !predictions.isEmpty else {
+                    continuation.resume(throwing: PersonDetectorError.noPerson)
+                    return
+                }
                 let finalPredictions = nonMaximumSuppression(predictions: predictions)
-                print("NMS işlemi sonrası: " , finalPredictions)
+                
                
                 
                 let detectedModel = DetectedModel(image: setupImage(image)!, rect: finalPredictions.first!.rect)

@@ -8,6 +8,11 @@
 
 import UIKit
 
+protocol ListViewControllerDelegate : AnyObject {
+    func showError(title: String,message: String)
+    func updateCollectionView()
+}
+
 class ListViewController: UIViewController {
 
     private var viewModel : ListViewModelProtocol
@@ -15,7 +20,9 @@ class ListViewController: UIViewController {
    
     init(viewModel: ListViewModelProtocol) {
         self.viewModel = viewModel
+      
         super.init(nibName: nil, bundle: nil)
+        self.viewModel.viewDelegate = self
     }
     
     required init?(coder: NSCoder) {
@@ -29,6 +36,7 @@ class ListViewController: UIViewController {
         setupCollectionView()
         applyConstraints()
         view.backgroundColor = .systemBackground
+        viewModel.viewDidLoad()
     }
     
     
@@ -43,9 +51,11 @@ class ListViewController: UIViewController {
     
     private func setupCollectionView(){
        
-        collectionView = .init(config: { index, cell in
-            // cell.configure methodu
-        }, numberOfItem: 15, selectionHandler: { index in
+        collectionView = .init(config: { [weak self ]index, cell in
+            let listModel =  self?.viewModel.getListModel(at: index)
+            cell.configureCell(with: listModel)
+            
+        }, numberOfItem: viewModel.numberOfItems(), selectionHandler: {[weak self] index in
             // viewModel.didSelectItem
         }, cellID: ListCollectionViewCell.cellID, layout: createTwoColumnLayout())
         
@@ -76,7 +86,18 @@ class ListViewController: UIViewController {
     
     
     @objc func addButtonTapped(){
-        navigationController?.pushViewController(HomeViewController(viewModel: HomeViewModel(personDetector: PersonDetector() , yoloInputWidth: 640 , yoloInputHeight: 640, yoloConfidenceThreshold: 0.3)), animated: true)
+        navigationController?.pushViewController(HomeViewController(viewModel: HomeViewModel(personDetector: PersonDetector(), databaseManager: DatabaseManager())), animated: true)
     }
 }
 
+extension ListViewController : ListViewControllerDelegate {
+    func showError(title: String, message: String) {
+        self.showDefaultError(title: title, message: message)
+    }
+    
+    func updateCollectionView() {
+        self.collectionView.reload(numberOfItem: self.viewModel.numberOfItems())
+    }
+    
+    
+}

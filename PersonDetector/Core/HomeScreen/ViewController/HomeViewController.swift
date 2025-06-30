@@ -161,8 +161,11 @@ extension HomeViewController: HomeViewControllerDelegate {
         }
     }
     
+    
     func showCustomAlert(image: UIImage) {
-        let customAlert = CustomAlertController(image: image)
+        let customAlert = CustomAlertController(image: image) { [weak self] in
+            self?.viewModel.saveImageToDB(image: image, date: Date.getCurrentDay(), isPersonDetected: true)
+        }
         customAlert.modalTransitionStyle = .crossDissolve
         customAlert.modalPresentationStyle = .fullScreen
         self.present(customAlert,animated: true)
