@@ -9,10 +9,12 @@ import Foundation
 import RealmSwift
 
 final class ListModel : Object{
-    // Persisted anlamı? : Realme bu property'sinin kalıcı olarak saklanacağını bildirir. @Persisted sayesinde Realm bu değişkenlerin değişimini otomatik olarak takip edebilir ve güncelleyebilir. v10 dan sonra zorunlu!
-    
-    //Eğer bir property realme kaydedilmesin ama sınıfta bulunsun istiyorsan, onu @Ignored olarak işaretleyebilirsin
-    
+    /* coding keys ? :  JSONdaki anahtar isimleri ile modeldeki property isimleri farklıysa eşleştirme yapmak için kullanılır. Örnek kullanım :
+     private enum CodingKeys: String, CodingKey {
+     case id = "user_id"
+     case date = "date"
+     case imageData = "image_data"
+ }*/
     @Persisted(primaryKey: true) var _id: ObjectId
     @Persisted var date: String
     @Persisted var imageData : Data

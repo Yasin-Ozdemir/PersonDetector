@@ -45,11 +45,10 @@ final class PersonDetector: PersonDetectorProtocol {
 
     }
 
-    //
 
     func detectPerson(with image: UIImage) async throws -> DetectedModel {
         let startTime = Date()
-        guard let inputData = preprocess(image: image), let interpreter = interpreter else {
+        guard let inputData : Data = preprocess(image: image), let interpreter else {
             throw PersonDetectorError.detectionFailed
         }
 
@@ -59,31 +58,36 @@ final class PersonDetector: PersonDetectorProtocol {
                 try interpreter.copy(inputData, toInputAt: 0)
                 try interpreter.invoke()
 
-                let boxes = try interpreter.output(at: 0).data.toArray(type: Float32.self)
-                let confidences = try interpreter.output(at: 1).data.toArray(type: Float32.self)
-
-                var predictions: [Detection] = []
+                let boxes : [Float] = try interpreter.output(at: 0).data.toArray(type: Float32.self)
+                let confidences  : [Float] = try interpreter.output(at: 1).data.toArray(type: Float32.self)
                 
-                // high order convert
-                for i in 0..<confidences.count {
-                    if confidences[i] > 0.3 {
-                        let box = Array(boxes[i * 4..<i * 4 + 4])
-                        let rect = CGRect(x: CGFloat(box[0]),y: CGFloat(box[1]),width: CGFloat(box[2] - box[0]),height: CGFloat(box[3] - box[1]))
-                        
-                        // append kullanımı dezavantaj map ile kıyasla başka seçenekleri düşün
-                        predictions.append(Detection(score: confidences[i], rect: rect))
-                    }
+                
+                // Append başlangıçta küçük bir kapasiteyle başlar eleman eklendikçe resize yapılır. Büyük döngülerde çok maliyete sebep
+                // reserveCapacity ile append hızlandırılabilir. (Boyutu önceden belirleme)
+                // filter : her eleman için koşulu test eder true dönenleri yeni diziye ekler.
+                // lazy : Normalde işlemler sırayla hemen uygulanır. Lazy kullanıldığında ise bu işlemler gerektiği anda yani map çağrıldığında kullanılır. Gereksiz bellek kullanımını engeller.
+                
+                let detections : [Detection] = confidences.lazy.enumerated().filter { $1 > 0.3}.map { (index , confidence) in
+                    
+                    let box = Array(boxes[index * 4..<index * 4 + 4])
+                    let rect = CGRect(x: CGFloat(box[0]),y: CGFloat(box[1]),width: CGFloat(box[2] - box[0]),height: CGFloat(box[3] - box[1]))
+                    return Detection(score: confidence, rect: rect)
+                    
                 }
-                
-                guard !predictions.isEmpty else {
+                                
+                guard  !detections.isEmpty else {
                     continuation.resume(throwing: PersonDetectorError.noPerson)
                     return
                 }
-                let finalPredictions = nonMaximumSuppression(predictions: predictions)
                 
-               
+                let finalPredictions = nonMaximumSuppression(predictions: detections)
                 
-                let detectedModel = DetectedModel(image: setupImage(image)!, rect: finalPredictions.first!.rect)
+                guard let image = setupImage(image) , let rect = finalPredictions.first?.rect else {
+                    continuation.resume(throwing: PersonDetectorError.detectionFailed)
+                    return
+                }
+                
+                let detectedModel = DetectedModel(image: image, rect: rect)
                 continuation.resume(returning: detectedModel)
 
             } catch {
@@ -133,7 +137,7 @@ final class PersonDetector: PersonDetectorProtocol {
             result.append(best)
 
             sorted = sorted.filter {
-                iou($0.rect, best.rect) > iouThreshold
+                iou($0.rect, best.rect) < iouThreshold
             }
         }
 

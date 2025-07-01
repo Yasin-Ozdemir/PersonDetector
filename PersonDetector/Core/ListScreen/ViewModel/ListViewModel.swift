@@ -14,13 +14,15 @@ protocol ListViewModelProtocol {
     func numberOfItems() -> Int
     func viewDidLoad()
     func getListModel(at index: Int) -> ListModel?
+    func didSelectItem(at index: Int)
+    func deleteListModel(at index: Int)
     var viewDelegate: ListViewControllerDelegate? { get set }
 }
 
 
 class ListViewModel: ListViewModelProtocol {
     private let databaseManager: DatabaseManagerProtocol
-    
+
     private var listModels: [ListModel] = []
     weak var viewDelegate: ListViewControllerDelegate?
     init(databaseManager: DatabaseManagerProtocol) {
@@ -33,30 +35,53 @@ class ListViewModel: ListViewModelProtocol {
     }
 
 
+    func didSelectItem(at index: Int) {
+        guard listModels[index].isPersonDetected else {
+            return
+        }
+        viewDelegate?.navigateTo(viewController: HomeViewController(viewModel: HomeViewModel(personDetector: PersonDetector(), databaseManager: DatabaseManager())))
+    }
+
+    
+    func deleteListModel(at index: Int) {
+        Task{
+            do {
+                let id = listModels[index]._id
+                try await databaseManager.delete(self.listModels[index], id: id)
+                listModels.remove(at: index)
+                viewDelegate?.updateCollectionView()
+            } catch {
+                viewDelegate?.showError(title: "error".localized, message: "realm_error".localized)
+            }
+        }
+    }
+    
+    
     func viewDidLoad() {
         fetchListModels()
         addNotificationObserver()
     }
 
 
-    func fetchListModels() {
+    private func fetchListModels() {
+        viewDelegate?.showLoadingIndicator()
         Task(priority: .userInitiated) {
             do {
-                let listModels = try await databaseManager.getAll(model: ListModel.self)
+                let listModels : [ListModel] = try await databaseManager.getAll(model: ListModel.self)
                 
-                DispatchQueue.main.async {
-                    self.listModels = listModels
-                    self.viewDelegate?.updateCollectionView()
-                }
+                self.listModels = listModels
+                self.viewDelegate?.updateCollectionView()
+                self.viewDelegate?.hideLoadingIndicator()
+                
             } catch {
+                self.viewDelegate?.hideLoadingIndicator()
                 viewDelegate?.showError(title: "error".localized, message: "realm_error".localized)
             }
         }
-
     }
 
 
-    func addNotificationObserver() {
+    private func addNotificationObserver() {
         NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: NSNotification.Name("PhotoSaved"), object: nil)
     }
 

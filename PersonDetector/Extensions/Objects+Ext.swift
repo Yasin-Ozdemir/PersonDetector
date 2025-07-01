@@ -10,7 +10,6 @@ import RealmSwift
 
 extension Object {
     // Her @Persisted property tek tek okunur ve yeni nesneye aktarılır. Bağımsız realme bağlı olmayan bir kopya oluşur.
-    
     func detached() -> Self {
         let detachedObject = Self()
         for property in objectSchema.properties {

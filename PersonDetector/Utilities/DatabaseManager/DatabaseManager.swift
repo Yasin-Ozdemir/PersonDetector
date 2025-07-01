@@ -14,14 +14,14 @@ enum DatabaseError: Error {
 
 protocol DatabaseManagerProtocol {
     func save<T: Object>(_ object: T) async throws
-    func delete<T: Object>(_ object: T) async throws
+    func delete<T: Object>(_ object: T , id: ObjectId) async throws
     func getAll<T: Object>(model: T.Type) async throws -> [T]
 }
 
 final class DatabaseManager: DatabaseManagerProtocol {
-    // Realm hangi thread’de yaratıldıysa, sadece orada kullanılabilir. Bu yüzden kullanılacağı threadde yarat
-    // coding keys ?
-    // realm objesine variable ekle ?
+    /*
+     realm objesine variable ekle ? : Schema versiyonu arttırılır ve eğer yeni eklenen propertynin default değeri yoksa migration yapılarak kayıtlı nesnelere bu property manuel eklenir aksi takdirde crash olur.
+     */
 
     func save<T: Object>(_ object: T) async throws {
         try await withCheckedThrowingContinuation { continuation in
@@ -52,12 +52,15 @@ final class DatabaseManager: DatabaseManagerProtocol {
     }
 
 
-    func delete<T: Object>(_ object: T) async throws {
+    func delete<T: Object>(_ object: T , id: ObjectId) async throws {
         try await withCheckedThrowingContinuation { continuation in
             do{
                 let realm = try Realm()
+                guard let originalObject = realm.object(ofType: T.self, forPrimaryKey: id) else{
+                    return
+                }
                 try realm.write {
-                    realm.delete(object)
+                    realm.delete(originalObject)
                 }
                 continuation.resume()
             }catch {

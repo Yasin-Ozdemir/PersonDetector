@@ -27,7 +27,6 @@ final class ListCollectionViewCell: UICollectionViewCell {
         label.textAlignment = .center
         label.numberOfLines = 1
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = "01.01.01"
         return label
     }()
     
@@ -62,7 +61,7 @@ final class ListCollectionViewCell: UICollectionViewCell {
         ])
     }
     
-    // optional
+
     func configureCell(with listModel : ListModel?){
         guard let listModel  = listModel else { return }
         self.personDetect = listModel.isPersonDetected

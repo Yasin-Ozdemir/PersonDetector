@@ -11,6 +11,9 @@ import UIKit
 protocol ListViewControllerDelegate : AnyObject {
     func showError(title: String,message: String)
     func updateCollectionView()
+    func navigateTo(viewController: UIViewController)
+    func showLoadingIndicator()
+    func hideLoadingIndicator()
 }
 
 class ListViewController: UIViewController {
@@ -56,8 +59,10 @@ class ListViewController: UIViewController {
             cell.configureCell(with: listModel)
             
         }, numberOfItem: viewModel.numberOfItems(), selectionHandler: {[weak self] index in
-            // viewModel.didSelectItem
-        }, cellID: ListCollectionViewCell.cellID, layout: createTwoColumnLayout())
+            self?.viewModel.didSelectItem(at: index)
+        }, cellID: ListCollectionViewCell.cellID, layout: createTwoColumnLayout(), deletionHandler: { index in
+            self.viewModel.deleteListModel(at: index)
+        })
         
         view.addSubview(collectionView)
    
@@ -86,11 +91,27 @@ class ListViewController: UIViewController {
     
     
     @objc func addButtonTapped(){
-        navigationController?.pushViewController(HomeViewController(viewModel: HomeViewModel(personDetector: PersonDetector(), databaseManager: DatabaseManager())), animated: true)
+        self.navigateTo(viewController: HomeViewController(viewModel: HomeViewModel(personDetector: PersonDetector(), databaseManager: DatabaseManager())))
     }
+    
+    
 }
 
 extension ListViewController : ListViewControllerDelegate {
+    func showLoadingIndicator() {
+        showActivityProgressIndicator()
+    }
+    
+    func hideLoadingIndicator() {
+        DispatchQueue.main.async {
+            self.dismissActivityProgressIndicator()
+        }
+    }
+    
+    func navigateTo(viewController: UIViewController) {
+        self.navigationController?.pushViewController(viewController, animated: true)
+    }
+    
     func showError(title: String, message: String) {
         self.showDefaultError(title: title, message: message)
     }

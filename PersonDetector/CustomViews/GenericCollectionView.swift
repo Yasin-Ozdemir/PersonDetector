@@ -16,14 +16,16 @@ final class GenericCollectionView<Cell : UICollectionViewCell> : UICollectionVie
     private var selectionHandler : ((Int)-> Void)
     private var cellID : String
     private var layout : UICollectionViewFlowLayout
+    private var deletionHandler : ((Int)-> Void)?
     
-    init(config: @escaping (Int, Cell) -> Void, numberOfItem: Int, selectionHandler: @escaping (Int) -> Void, cellID: String, layout: UICollectionViewFlowLayout) {
+    init(config: @escaping (Int, Cell) -> Void, numberOfItem: Int, selectionHandler: @escaping (Int) -> Void, cellID: String, layout: UICollectionViewFlowLayout, deletionHandler: ((Int)-> Void)? = nil) {
         
         self.config = config
         self.numberOfItem = numberOfItem
         self.selectionHandler = selectionHandler
         self.cellID = cellID
         self.layout = layout
+        self.deletionHandler = deletionHandler
         super.init(frame: .zero, collectionViewLayout: layout)
         
         self.delegate = self
@@ -60,5 +62,18 @@ final class GenericCollectionView<Cell : UICollectionViewCell> : UICollectionVie
             self.numberOfItem = numberOfItem
             self.reloadData()
         }
+    }
+        
+    func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemsAt indexPaths: [IndexPath], point: CGPoint) -> UIContextMenuConfiguration? {
+        guard let deletionHandler else {
+            return nil
+        }
+        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
+                let deleteAction = UIAction(title: "Remove", image: UIImage(systemName: "trash"), attributes: .destructive) { _ in
+                    deletionHandler(indexPaths[0].item)
+                }
+
+                return UIMenu(title: "", children: [deleteAction])
+            }
     }
 }
