@@ -8,6 +8,14 @@
 
 import UIKit
 
+protocol ListViewControllerDelegate : AnyObject {
+    func showError(title: String,message: String)
+    func updateCollectionView()
+    func navigateTo(viewController: UIViewController)
+    func showLoadingIndicator()
+    func hideLoadingIndicator()
+}
+
 class ListViewController: UIViewController {
 
     private var viewModel : ListViewModelProtocol
@@ -15,7 +23,9 @@ class ListViewController: UIViewController {
    
     init(viewModel: ListViewModelProtocol) {
         self.viewModel = viewModel
+      
         super.init(nibName: nil, bundle: nil)
+        self.viewModel.viewDelegate = self
     }
     
     required init?(coder: NSCoder) {
@@ -29,6 +39,7 @@ class ListViewController: UIViewController {
         setupCollectionView()
         applyConstraints()
         view.backgroundColor = .systemBackground
+        viewModel.viewDidLoad()
     }
     
     
@@ -38,16 +49,23 @@ class ListViewController: UIViewController {
         
         let addButton = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonTapped))
         self.navigationItem.rightBarButtonItem = addButton
+        
+        let filterButton = UIBarButtonItem(image: UIImage(systemName: "line.3.horizontal.decrease"), style: .done, target: self, action: #selector(filterButtonTapped))
+        self.navigationItem.leftBarButtonItem = filterButton
     }
     
     
     private func setupCollectionView(){
        
-        collectionView = .init(config: { index, cell in
-            // cell.configure methodu
-        }, numberOfItem: 15, selectionHandler: { index in
-            // viewModel.didSelectItem
-        }, cellID: ListCollectionViewCell.cellID, layout: createTwoColumnLayout())
+        collectionView = .init(config: { [weak self ]index, cell in
+            let listModel =  self?.viewModel.getListModel(at: index)
+            cell.configureCell(with: listModel)
+            
+        }, numberOfItem: viewModel.numberOfItems(), selectionHandler: {[weak self] index in
+            self?.viewModel.didSelectItem(at: index)
+        }, cellID: ListCollectionViewCell.cellID, layout: createTwoColumnLayout(), deletionHandler: { index in
+            self.viewModel.deleteListModel(at: index)
+        })
         
         view.addSubview(collectionView)
    
@@ -76,7 +94,38 @@ class ListViewController: UIViewController {
     
     
     @objc func addButtonTapped(){
-        navigationController?.pushViewController(HomeViewController(viewModel: HomeViewModel(personDetector: PersonDetector() , yoloInputWidth: 640 , yoloInputHeight: 640, yoloConfidenceThreshold: 0.3)), animated: true)
+        self.navigateTo(viewController: HomeViewController(viewModel: HomeViewModel(personDetector: PersonDetector(), databaseManager: DatabaseManager())))
     }
+    
+    
+    @objc func filterButtonTapped(){
+        viewModel.filterListModels()
+    }
+    
 }
 
+extension ListViewController : ListViewControllerDelegate {
+    func showLoadingIndicator() {
+        showActivityProgressIndicator()
+    }
+    
+    func hideLoadingIndicator() {
+        DispatchQueue.main.async {
+            self.dismissActivityProgressIndicator()
+        }
+    }
+    
+    func navigateTo(viewController: UIViewController) {
+        self.navigationController?.pushViewController(viewController, animated: true)
+    }
+    
+    func showError(title: String, message: String) {
+        self.showDefaultError(title: title, message: message)
+    }
+    
+    func updateCollectionView() {
+        self.collectionView.reload(numberOfItem: self.viewModel.numberOfItems())
+    }
+    
+    
+}

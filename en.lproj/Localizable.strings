@@ -21,4 +21,5 @@
 "camera_input_error" = "Camera Input Error.";
 "photo_output_error" = "Photo Output Could Not Be Added.";
 "person_detection_failed" = "Person Detection Failed";
+"realm_error" = "Database error, please try again later.";
 

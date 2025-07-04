@@ -16,7 +16,4 @@ extension String {
         }
 }
 
-// öncesine sayfa collection view her resim kaydedilcek Realm kullanılcak.
-// persen detected ise fotoğraf çekme sayfasına
-// kişi yoksa detay sayfası yok
-// cellin içinde resim ve tarih
+

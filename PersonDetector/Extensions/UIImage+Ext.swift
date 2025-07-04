@@ -6,7 +6,11 @@
 //
 
 import UIKit
-
+enum BlurLevel : Int {
+    case low = 20
+    case mid = 40
+    case high = 60
+}
 extension UIImage {
 
     func upright() -> UIImage {
@@ -66,6 +70,32 @@ extension UIImage {
 
         return Data(rgbBuffer)
     }
+    
+    
+    func blur(rect : CGRect , level : BlurLevel) -> UIImage?{
+        guard  let ciImage = CIImage(image: self) else {
+          return nil
+      }
 
+      let context = CIContext()
+      var outputImage = ciImage
+     
+   
+     
+      let cropped = ciImage.cropped(to: rect)
+      let blurred = cropped
+            .applyingFilter("CIGaussianBlur", parameters: [kCIInputRadiusKey: level.rawValue])
+          .cropped(to: rect)
+
+
+      outputImage = blurred.composited(over: outputImage)
+
+
+      if let finalCG = context.createCGImage(outputImage, from: outputImage.extent) {
+          return UIImage(cgImage: finalCG)
+      }
+
+      return nil
+    }
 
 }

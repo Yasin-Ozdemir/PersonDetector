@@ -27,7 +27,7 @@ final class PersonDetector: PersonDetectorProtocol {
     private var confidenceThreshold: Float = 0
     
     func setupYolomodel(inputWidth: CGFloat, inputHeight: CGFloat, confidenceThreshold: Float) throws {
-        guard let modelPath = Bundle.main.path(forResource: "person-det 1", ofType: "tflite") else {
+        guard let modelPath = Bundle.main.path(forResource: "newest_person_det_model", ofType: "tflite") else {
             print("Model bulunamadı")
             return
         }
@@ -48,7 +48,7 @@ final class PersonDetector: PersonDetectorProtocol {
 
     func detectPerson(with image: UIImage) async throws -> DetectedModel {
         let startTime = Date()
-        guard let inputData = preprocess(image: image), let interpreter = interpreter else {
+        guard let inputImage = setupImage(image) ,let inputData : Data = inputImage.rgbData(), let interpreter else {
             throw PersonDetectorError.detectionFailed
         }
 
@@ -58,25 +58,26 @@ final class PersonDetector: PersonDetectorProtocol {
                 try interpreter.copy(inputData, toInputAt: 0)
                 try interpreter.invoke()
 
-                let boxes = try interpreter.output(at: 0).data.toArray(type: Float32.self)
-                let confidences = try interpreter.output(at: 1).data.toArray(type: Float32.self)
-
-                var predictions: [Detection] = []
-
-                for i in 0..<confidences.count {
-                    if confidences[i] > 0.3 {
-                        let box = Array(boxes[i * 4..<i * 4 + 4])
-                        let rect = CGRect(x: CGFloat(box[0]),y: CGFloat(box[1]),width: CGFloat(box[2] - box[0]),height: CGFloat(box[3] - box[1]))
-
-                        predictions.append(Detection(score: confidences[i], rect: rect))
-                    }
-                }
-                print("NMS işlemi öncesi: ", predictions)
-                let finalPredictions = nonMaximumSuppression(predictions: predictions)
-                print("NMS işlemi sonrası: " , finalPredictions)
-               
+                let boxes : [Float] = try interpreter.output(at: 0).data.toArray(type: Float.self)
+                let confidences  : [Float] = try interpreter.output(at: 1).data.toArray(type: Float.self)
                 
-                let detectedModel = DetectedModel(image: setupImage(image)!, rect: finalPredictions.first!.rect)
+                
+                // Append başlangıçta küçük bir kapasiteyle başlar eleman eklendikçe resize yapılır. Büyük döngülerde çok maliyete sebep
+                // reserveCapacity ile append hızlandırılabilir. (Boyutu önceden belirleme)
+                // filter : her eleman için koşulu test eder true dönenleri yeni diziye ekler.
+                // lazy : Normalde işlemler sırayla hemen uygulanır. Lazy kullanıldığında ise zincirdeki işlemler birleştirilir yani her bir eleman üzerinde sadece ihtiyaç duyulduğunda işlem yapılır. Gereksiz bellek kullanımını engeller. Büyük dizilerde ve zincirli işlemlerde hızlı
+                
+                let detections : [Detection] = self.filterDetections(boxes: boxes, confidences: confidences)
+                                
+                guard  !detections.isEmpty else {
+                    continuation.resume(throwing: PersonDetectorError.noPerson)
+                    return
+                }
+               
+                let finalPredictions : [Detection] = nonMaximumSuppression(predictions: detections)
+             
+                
+                let detectedModel = DetectedModel(image: inputImage, rect: finalPredictions[0].rect)
                 continuation.resume(returning: detectedModel)
 
             } catch {
@@ -92,21 +93,9 @@ final class PersonDetector: PersonDetectorProtocol {
     }
 
 
-    private func preprocess(image: UIImage) -> Data? {
-        guard let image = setupImage(image) else {
-            return nil
-        }
-
-        guard let rgbData = image.rgbData() else {
-            print("RGB verisi oluşturulamadı.")
-            return nil
-        }
-
-        return rgbData
-    }
-
     private func setupImage(_ image: UIImage) -> UIImage? {
         let fixedImage = image.upright()
+        
         guard let resizedImage = fixedImage.resize(to: CGSize(width: inputWidth, height: inputHeight)) else {
             print("Resim yeniden boyutlandırılamadı.")
             return nil
@@ -114,6 +103,25 @@ final class PersonDetector: PersonDetectorProtocol {
         return resizedImage
     }
 
+    
+    private func filterDetections(boxes : [Float], confidences : [Float]) -> [Detection]{
+        let detections : [Detection] = confidences.lazy.enumerated().filter{$1 > confidenceThreshold}.map { index, confidence in
+            let box =  Array(boxes[index * 4..<index * 4 + 4])
+            
+            let x = CGFloat(box[0])
+            let y = CGFloat(box[1])
+            let width = CGFloat(box[2] - box[0])
+            let height = CGFloat(box[3] - box[1])
+            
+            let rect = CGRect(x: x, y: y, width: width, height: height)
+            
+            return Detection(score: confidence, rect: rect)
+        }
+        
+        return detections
+    }
+    
+    
     private func nonMaximumSuppression(predictions: [Detection], iouThreshold: Float = 0.3) -> [Detection] {
         var sorted = predictions.sorted { $0.score > $1.score }
        
@@ -126,7 +134,7 @@ final class PersonDetector: PersonDetectorProtocol {
             result.append(best)
 
             sorted = sorted.filter {
-                iou($0.rect, best.rect) > iouThreshold
+                iou($0.rect, best.rect) < iouThreshold
             }
         }
 

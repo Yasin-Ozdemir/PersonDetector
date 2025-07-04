@@ -21,3 +21,4 @@
 "camera_input_error" = "Kamera Giriş Hatası.";
 "photo_output_error" = "Fotoğraf Çıktısı Eklenemedi.";
 "person_detection_failed" = "Kişi Algılama Başarısız";
+"realm_error" = "Veritabanı hatası, daha sonra tekrar deneyiniz.";
