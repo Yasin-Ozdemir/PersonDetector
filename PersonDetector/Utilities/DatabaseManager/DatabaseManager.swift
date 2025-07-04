@@ -14,8 +14,8 @@ enum DatabaseError: Error {
 
 protocol DatabaseManagerProtocol {
     func save<T: Object>(_ object: T) async throws
-    func delete<T: Object>(_ object: T , id: ObjectId) async throws
-    func getAll<T: Object>(model: T.Type) async throws -> [T]
+    func delete<T: Object>( modelType: T.Type , id: ObjectId ) async throws 
+    func getAll<T: Object>(model: T.Type)  throws -> Results<T>
 }
 
 final class DatabaseManager: DatabaseManagerProtocol {
@@ -29,6 +29,7 @@ final class DatabaseManager: DatabaseManagerProtocol {
                 let realm = try Realm()
                 try realm.write {
                     realm.add(object)
+                    print("save success")
                 }
                 continuation.resume()
             } catch {
@@ -38,29 +39,26 @@ final class DatabaseManager: DatabaseManagerProtocol {
     }
 
 
-    func getAll<T: Object>(model: T.Type) async throws -> [T] {
-        try await withCheckedThrowingContinuation { continuation in
-            do {
+    func getAll<T: Object>(model: T.Type)  throws -> Results<T> {
+      
                 let realm = try Realm()
                 let results = realm.objects(model)
-                let detachedArray = results.map { $0.detached() }
-                continuation.resume(returning: Array(detachedArray))
-            } catch {
-                continuation.resume(throwing: error)
-            }
-        }
+               
+               return results
+            
     }
 
 
-    func delete<T: Object>(_ object: T , id: ObjectId) async throws {
+    func delete<T: Object>( modelType: T.Type , id: ObjectId ) async throws {
         try await withCheckedThrowingContinuation { continuation in
             do{
                 let realm = try Realm()
-                guard let originalObject = realm.object(ofType: T.self, forPrimaryKey: id) else{
+                guard let object = realm.object(ofType: modelType, forPrimaryKey: id) else {
                     return
                 }
+                
                 try realm.write {
-                    realm.delete(originalObject)
+                    realm.delete(object)
                 }
                 continuation.resume()
             }catch {

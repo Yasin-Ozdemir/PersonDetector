@@ -49,6 +49,9 @@ class ListViewController: UIViewController {
         
         let addButton = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonTapped))
         self.navigationItem.rightBarButtonItem = addButton
+        
+        let filterButton = UIBarButtonItem(image: UIImage(systemName: "line.3.horizontal.decrease"), style: .done, target: self, action: #selector(filterButtonTapped))
+        self.navigationItem.leftBarButtonItem = filterButton
     }
     
     
@@ -94,6 +97,10 @@ class ListViewController: UIViewController {
         self.navigateTo(viewController: HomeViewController(viewModel: HomeViewModel(personDetector: PersonDetector(), databaseManager: DatabaseManager())))
     }
     
+    
+    @objc func filterButtonTapped(){
+        viewModel.filterListModels()
+    }
     
 }
 

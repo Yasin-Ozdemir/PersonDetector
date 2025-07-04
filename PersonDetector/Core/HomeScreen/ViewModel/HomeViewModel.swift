@@ -97,12 +97,14 @@ final class HomeViewModel: HomeViewModelProtocol {
     func detectPerson(with image: UIImage) {
         viewDelegate?.showActivityIndicator()
         // task seviyelerine bak High : 0.708 , userInitiated : 0.675, utility : 2.03 , low: 2.05 , medium: 0.71
-        Task(priority: .high) {
+        Task(priority: .userInitiated) {
             do {
                 let result = try await personDetector.detectPerson(with: image)
               
-
-                guard let bluredImage = self.blur(image: result.image, rect: result.rect, defaultImageSize: image.size) else {
+                let originalImage = result.image.resize(to: image.size)
+                let originalRect = result.rect.calculate(for: image.size, currentSize: CGSize(width: yoloInputWidth, height: yoloInputHeight))
+                
+                guard let originalImage, let bluredImage = originalImage.blur(rect: originalRect, level: .mid) else {
                     return
                 }
               //  @Sendable protocol ne araştır
@@ -124,50 +126,9 @@ final class HomeViewModel: HomeViewModelProtocol {
 
     }
 
-
-    private func blur(image: UIImage, rect: CGRect, defaultImageSize: CGSize) -> UIImage? {
-        guard let resized = image.resize(to: defaultImageSize),
-            let ciImage = CIImage(image: resized) else {
-            return nil
-        }
-
-        let context = CIContext()
-        var outputImage = ciImage
-       
-        let newRect = calculateRect(from: rect, with: defaultImageSize)
-       
-        let cropped = ciImage.cropped(to: newRect)
-        let blurred = cropped
-            .applyingFilter("CIGaussianBlur", parameters: [kCIInputRadiusKey: 40])
-            .cropped(to: newRect)
-
-
-        outputImage = blurred.composited(over: outputImage)
-
-
-        if let finalCG = context.createCGImage(outputImage, from: outputImage.extent) {
-            return UIImage(cgImage: finalCG)
-        }
-
-        return nil
-    }
-
-    
-    private func calculateRect(from rect: CGRect , with imageSize : CGSize) -> CGRect {
-        let xRatio = (imageSize.width / self.yoloInputWidth)
-        let yRatio = (imageSize.height / self.yoloInputHeight)
-        
-        let xmin = rect.minX * xRatio
-        let ymin = rect.minY  * yRatio
-        let xmax = rect.maxX * xRatio
-        let ymax = rect.maxY  * yRatio
-
-        return CGRect(x: xmin, y: ymin, width: xmax - xmin, height: ymax - ymin)
-    }
-
     
      func saveImageToDB(image: UIImage, date: String, isPersonDetected: Bool) {
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+        guard let imageData = image.jpegData(compressionQuality: 0.5) else {
             return
         }
         let listModel = ListModel(date: date, imageData: imageData , isPersonDetected: isPersonDetected)
@@ -176,7 +137,10 @@ final class HomeViewModel: HomeViewModelProtocol {
             do {
                 try await self.databaseManager.save(listModel)
                 viewDelegate?.showError(title: "Başarılı", message: "Fotoğraf Başarıyla Kayıt Edildi.")
-                NotificationCenter.default.post(name: NSNotification.Name("PhotoSaved"), object: nil)
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: NSNotification.Name("PhotoSaved"), object: nil) 
+                }
+                
             } catch {
                 viewDelegate?.showError(title: "error".localized, message: "Kayıt Edilemedi.")
             }

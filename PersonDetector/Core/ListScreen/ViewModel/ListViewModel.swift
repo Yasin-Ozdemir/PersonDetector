@@ -16,14 +16,18 @@ protocol ListViewModelProtocol {
     func getListModel(at index: Int) -> ListModel?
     func didSelectItem(at index: Int)
     func deleteListModel(at index: Int)
+    func filterListModels()
     var viewDelegate: ListViewControllerDelegate? { get set }
 }
 
 
 class ListViewModel: ListViewModelProtocol {
-    private let databaseManager: DatabaseManagerProtocol
-
+   
+    private var isFiltered : Bool = false
     private var listModels: [ListModel] = []
+    private var listModelsTemp: [ListModel] = []
+    
+    private let databaseManager: DatabaseManagerProtocol
     weak var viewDelegate: ListViewControllerDelegate?
     init(databaseManager: DatabaseManagerProtocol) {
         self.databaseManager = databaseManager
@@ -44,15 +48,19 @@ class ListViewModel: ListViewModelProtocol {
 
     
     func deleteListModel(at index: Int) {
+        viewDelegate?.showLoadingIndicator()
+        let id = listModels[index]._id
         Task{
             do {
-                let id = listModels[index]._id
-                try await databaseManager.delete(self.listModels[index], id: id)
+                try await databaseManager.delete(modelType: ListModel.self, id: id)
                 listModels.remove(at: index)
                 viewDelegate?.updateCollectionView()
+                self.viewDelegate?.hideLoadingIndicator()
             } catch {
+                self.viewDelegate?.hideLoadingIndicator()
                 viewDelegate?.showError(title: "error".localized, message: "realm_error".localized)
             }
+           
         }
     }
     
@@ -65,11 +73,10 @@ class ListViewModel: ListViewModelProtocol {
 
     private func fetchListModels() {
         viewDelegate?.showLoadingIndicator()
-        Task(priority: .userInitiated) {
             do {
-                let listModels : [ListModel] = try await databaseManager.getAll(model: ListModel.self)
+                let listModels = try databaseManager.getAll(model: ListModel.self)
                 
-                self.listModels = listModels
+                self.listModels = Array(listModels)
                 self.viewDelegate?.updateCollectionView()
                 self.viewDelegate?.hideLoadingIndicator()
                 
@@ -77,7 +84,6 @@ class ListViewModel: ListViewModelProtocol {
                 self.viewDelegate?.hideLoadingIndicator()
                 viewDelegate?.showError(title: "error".localized, message: "realm_error".localized)
             }
-        }
     }
 
 
@@ -96,5 +102,17 @@ class ListViewModel: ListViewModelProtocol {
         return listModels[index]
     }
 
-
+    
+    func filterListModels(){
+        if !isFiltered {
+            self.listModelsTemp = listModels
+            self.listModels = listModels.filter{$0.isPersonDetected}
+            self.viewDelegate?.updateCollectionView()
+        }else {
+            self.listModels = listModelsTemp
+            self.viewDelegate?.updateCollectionView()
+        }
+        self.isFiltered.toggle()
+        
+    }
 }
