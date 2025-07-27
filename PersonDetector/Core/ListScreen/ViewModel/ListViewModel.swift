@@ -8,7 +8,6 @@
 
 import Foundation
 import UIKit
-import RealmSwift
 
 protocol ListViewModelProtocol {
     func numberOfItems() -> Int
@@ -17,18 +16,21 @@ protocol ListViewModelProtocol {
     func didSelectItem(at index: Int)
     func deleteListModel(at index: Int)
     func filterListModels()
+    func fetchListModelsPagination()
     var viewDelegate: ListViewControllerDelegate? { get set }
 }
-
 
 class ListViewModel: ListViewModelProtocol {
    
     private var isFiltered : Bool = false
     private var listModels: [ListModel] = []
     private var listModelsTemp: [ListModel] = []
+    private var moreData : Bool = true
+    private var lastDate : Date?
     
     private let databaseManager: DatabaseManagerProtocol
     weak var viewDelegate: ListViewControllerDelegate?
+    
     init(databaseManager: DatabaseManagerProtocol) {
         self.databaseManager = databaseManager
     }
@@ -66,34 +68,51 @@ class ListViewModel: ListViewModelProtocol {
     
     
     func viewDidLoad() {
-        fetchListModels()
-        addNotificationObserver()
+        fetchListModelsPagination()
+         addNotificationObserver()
+        
     }
-
-
-    private func fetchListModels() {
+    
+  
+     func fetchListModelsPagination() {
+         let startTime = Date()
+         guard moreData , !isFiltered else { return }
+         
         viewDelegate?.showLoadingIndicator()
-            do {
-                let listModels = try databaseManager.getAll(model: ListModel.self)
-                
-                self.listModels = Array(listModels)
-                self.viewDelegate?.updateCollectionView()
-                self.viewDelegate?.hideLoadingIndicator()
-                
-            } catch {
-                self.viewDelegate?.hideLoadingIndicator()
-                viewDelegate?.showError(title: "error".localized, message: "realm_error".localized)
-            }
+         do {
+            let objects = try databaseManager.getObjects(model: ListModel.self, lastDate: lastDate, pageSize: 20)
+             
+             guard !objects.isEmpty else {
+                 moreData.toggle()
+                 self.viewDelegate?.hideLoadingIndicator()
+                 return
+             }
+             
+             self.lastDate = objects.last?.date
+             self.listModels.append(contentsOf: objects)
+             self.viewDelegate?.updateCollectionView()
+             self.viewDelegate?.hideLoadingIndicator()
+             let endTime = Date()
+             print("Görünme Süresi: \(endTime.timeIntervalSince(startTime)) saniye")
+         }catch{
+             self.viewDelegate?.hideLoadingIndicator()
+             viewDelegate?.showError(title: "error".localized, message: "realm_error".localized)
+         }
     }
 
 
     private func addNotificationObserver() {
-        NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: NSNotification.Name("PhotoSaved"), object: nil)
+        // extension NSNotification.Name
+        NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: .photoSaved, object: nil)
     }
 
 
     @objc func reloadData() {
-        fetchListModels()
+        self.viewDelegate?.scrollToTopCollectionView()
+        self.lastDate = nil
+        self.moreData = true
+        self.listModels = []
+        self.fetchListModelsPagination()
     }
 
 

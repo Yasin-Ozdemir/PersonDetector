@@ -121,7 +121,7 @@ final class HomeViewController: UIViewController {
             restartButton.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
             restartButton.heightAnchor.constraint(equalToConstant: 40),
             restartButton.widthAnchor.constraint(equalToConstant: 90),
-
+            
             doneButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 15),
             doneButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -15),
             doneButton.heightAnchor.constraint(equalToConstant: 30),
@@ -164,7 +164,7 @@ extension HomeViewController: HomeViewControllerDelegate {
     
     func showCustomAlert(image: UIImage) {
         let customAlert = CustomAlertController(image: image) { [weak self] in
-            self?.viewModel.saveImageToDB(image: image, date: Date.getCurrentDay(), isPersonDetected: true)
+            self?.viewModel.saveImageToDB(image: image, date: Date(), isPersonDetected: true)
         }
         customAlert.modalTransitionStyle = .crossDissolve
         customAlert.modalPresentationStyle = .fullScreen
@@ -197,6 +197,7 @@ extension HomeViewController: HomeViewControllerDelegate {
         guard let session = previewLayer.session else {
             return
         }
+        
         DispatchQueue.global().async {
             session.startRunning()
         }

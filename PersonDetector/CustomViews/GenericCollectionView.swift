@@ -17,8 +17,9 @@ final class GenericCollectionView<Cell : UICollectionViewCell> : UICollectionVie
     private var cellID : String
     private var layout : UICollectionViewFlowLayout
     private var deletionHandler : ((Int)-> Void)?
+    private var willDisplayHandler : ((Int)-> Void)?
     
-    init(config: @escaping (Int, Cell) -> Void, numberOfItem: Int, selectionHandler: @escaping (Int) -> Void, cellID: String, layout: UICollectionViewFlowLayout, deletionHandler: ((Int)-> Void)? = nil) {
+    init(config: @escaping (Int, Cell) -> Void, numberOfItem: Int, selectionHandler: @escaping (Int) -> Void, cellID: String, layout: UICollectionViewFlowLayout, deletionHandler: ((Int)-> Void)? = nil , willDisplayHandler : ((Int)-> Void)? = nil) {
         
         self.config = config
         self.numberOfItem = numberOfItem
@@ -26,6 +27,7 @@ final class GenericCollectionView<Cell : UICollectionViewCell> : UICollectionVie
         self.cellID = cellID
         self.layout = layout
         self.deletionHandler = deletionHandler
+        self.willDisplayHandler = willDisplayHandler
         super.init(frame: .zero, collectionViewLayout: layout)
         
         self.delegate = self
@@ -57,23 +59,35 @@ final class GenericCollectionView<Cell : UICollectionViewCell> : UICollectionVie
         selectionHandler(indexPath.item)
     }
     
+    func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemsAt indexPaths: [IndexPath], point: CGPoint) -> UIContextMenuConfiguration? {
+        guard let deletionHandler else {
+            return nil
+        }
+        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
+            let deleteAction = UIAction(title: "Remove", image: UIImage(systemName: "trash"), attributes: .destructive) { _ in
+                    deletionHandler(indexPaths[0].item)
+                }
+
+                return UIMenu(title: "", children: [deleteAction])
+            }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        guard let willDisplayHandler else {return}
+        
+        willDisplayHandler(indexPath.item)
+    }
+    
     func reload(numberOfItem : Int) {
         DispatchQueue.main.async {
             self.numberOfItem = numberOfItem
             self.reloadData()
         }
     }
-        
-    func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemsAt indexPaths: [IndexPath], point: CGPoint) -> UIContextMenuConfiguration? {
-        guard let deletionHandler else {
-            return nil
+    
+    func scrollTop(){
+        DispatchQueue.main.async {
+            self.setContentOffset(.zero, animated: true)
         }
-        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
-                let deleteAction = UIAction(title: "Remove", image: UIImage(systemName: "trash"), attributes: .destructive) { _ in
-                    deletionHandler(indexPaths[0].item)
-                }
-
-                return UIMenu(title: "", children: [deleteAction])
-            }
     }
 }

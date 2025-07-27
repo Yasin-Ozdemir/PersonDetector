@@ -7,13 +7,13 @@
 
 
 import UIKit
-
 protocol ListViewControllerDelegate : AnyObject {
     func showError(title: String,message: String)
     func updateCollectionView()
     func navigateTo(viewController: UIViewController)
     func showLoadingIndicator()
     func hideLoadingIndicator()
+    func scrollToTopCollectionView()
 }
 
 class ListViewController: UIViewController {
@@ -40,9 +40,10 @@ class ListViewController: UIViewController {
         applyConstraints()
         view.backgroundColor = .systemBackground
         viewModel.viewDidLoad()
+       
     }
     
-    
+  
     private func setupNavigationBar(){
         self.navigationItem.title = "Person Detector App"
         self.navigationController?.navigationBar.tintColor = .label
@@ -63,8 +64,15 @@ class ListViewController: UIViewController {
             
         }, numberOfItem: viewModel.numberOfItems(), selectionHandler: {[weak self] index in
             self?.viewModel.didSelectItem(at: index)
-        }, cellID: ListCollectionViewCell.cellID, layout: createTwoColumnLayout(), deletionHandler: { index in
-            self.viewModel.deleteListModel(at: index)
+        }, cellID: ListCollectionViewCell.cellID, layout: createTwoColumnLayout(), deletionHandler: {[weak self] index in
+            self?.viewModel.deleteListModel(at: index)
+        } , willDisplayHandler:  {[weak self] index in
+            guard let self else {return}
+            let shouldLoadMore = index >= self.viewModel.numberOfItems() - 2
+            
+            if shouldLoadMore {
+                self.viewModel.fetchListModelsPagination()
+            }
         })
         
         view.addSubview(collectionView)
@@ -125,6 +133,10 @@ extension ListViewController : ListViewControllerDelegate {
     
     func updateCollectionView() {
         self.collectionView.reload(numberOfItem: self.viewModel.numberOfItems())
+    }
+    
+    func scrollToTopCollectionView() {
+        self.collectionView.scrollTop()
     }
     
     

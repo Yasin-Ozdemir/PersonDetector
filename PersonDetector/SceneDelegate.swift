@@ -6,7 +6,7 @@
 //
 
 import UIKit
-
+import RealmSwift
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
@@ -17,9 +17,42 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
         guard let scene = (scene as? UIWindowScene) else { return }
+
+     /*   Task(priority: .userInitiated) {
+            let startTime = Date()
+            print("başladı")
+
+            let realm = try! Realm()
+            let imageData = UIImage(resource: .test).jpegData(compressionQuality: 0.1)!
+            var batch: [ListModel] = []
+
+            for i in 0..<13000 {
+                let bool = Bool.random()
+                let model = ListModel(date: Date(), imageData: imageData, isPersonDetected: bool)
+                batch.append(model)
+
+                if batch.count == 1000 {
+                    try! realm.write {
+                        realm.add(batch)
+                    }
+                    batch.removeAll(keepingCapacity: true)
+                }
+            }
+
+            // Kalan kayıtları da ekle
+            if !batch.isEmpty {
+                try! realm.write {
+                    realm.add(batch)
+                }
+            }
+
+            let endTime = Date()
+            print("Süre: \(endTime.timeIntervalSince(startTime)) saniye")
+        }*/
+
         let window = UIWindow(windowScene: scene)
-      
-        window.rootViewController =  UINavigationController(rootViewController: ListViewController(viewModel: ListViewModel(databaseManager: DatabaseManager())))
+        window.rootViewController = UINavigationController(rootViewController: ListViewController(viewModel: ListViewModel(databaseManager: DatabaseManager())))
+
         window.makeKeyAndVisible()
         self.window = window
     }

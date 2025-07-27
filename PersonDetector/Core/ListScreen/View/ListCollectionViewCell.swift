@@ -66,7 +66,7 @@ final class ListCollectionViewCell: UICollectionViewCell {
         guard let listModel  = listModel else { return }
         self.personDetect = listModel.isPersonDetected
         self.imageView.image = UIImage(data: listModel.imageData)
-        self.dateLabel.text = listModel.date
+        self.dateLabel.text = listModel.date.getDay()
         
         changeBackgroundColor()
     }

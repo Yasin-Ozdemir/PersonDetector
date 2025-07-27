@@ -8,12 +8,11 @@
 import Foundation
 
 extension Date{
-   static func getCurrentDay() -> String{
-        let date = Date()
+    func getDay() -> String{
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "d.MM.yyyy"
+        dateFormatter.dateFormat = "dd.MM.yyyy"
         
-        let todayDate = dateFormatter.string(from: date)
-        return todayDate
+        let dayDate = dateFormatter.string(from: self)
+        return dayDate
     }
 }
