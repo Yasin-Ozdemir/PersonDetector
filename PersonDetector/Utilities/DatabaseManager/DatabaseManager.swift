@@ -14,8 +14,9 @@ enum DatabaseError: Error {
 
 protocol DatabaseManagerProtocol {
     func save<T: Object>(_ object: T) async throws
-    func delete<T: Object>( modelType: T.Type , id: ObjectId ) async throws 
-    func getAll<T: Object>(model: T.Type)  throws -> Results<T>
+    func delete<T: Object>(modelType: T.Type, id: ObjectId) async throws
+    func getObjects<T: Object>(model: T.Type, lastDate: Date?, pageSize: Int) throws -> [T]
+    
 }
 
 final class DatabaseManager: DatabaseManagerProtocol {
@@ -29,7 +30,6 @@ final class DatabaseManager: DatabaseManagerProtocol {
                 let realm = try Realm()
                 try realm.write {
                     realm.add(object)
-                    print("save success")
                 }
                 continuation.resume()
             } catch {
@@ -39,33 +39,41 @@ final class DatabaseManager: DatabaseManagerProtocol {
     }
 
 
-    func getAll<T: Object>(model: T.Type)  throws -> Results<T> {
-      
-                let realm = try Realm()
-                let results = realm.objects(model)
-               
-               return results
-            
+    func getObjects<T: Object>(model: T.Type, lastDate: Date?, pageSize: Int) throws -> [T] {
+        // Results lazy tabanlıdır.
+
+        let realm = try Realm()
+        var result: Results<T>
+
+        if let lastDate {
+            result = realm.objects(model).filter("date < %@", lastDate).sorted(byKeyPath: "date", ascending: false)
+        } else {
+            result = realm.objects(model).sorted(byKeyPath: "date", ascending: false)
+        }
+
+        let page = Array(result.prefix(pageSize))
+        return page
     }
+    
 
-
-    func delete<T: Object>( modelType: T.Type , id: ObjectId ) async throws {
+    func delete<T: Object>(modelType: T.Type, id: ObjectId) async throws {
         try await withCheckedThrowingContinuation { continuation in
-            do{
+            do {
                 let realm = try Realm()
                 guard let object = realm.object(ofType: modelType, forPrimaryKey: id) else {
                     return
                 }
-                
+
                 try realm.write {
                     realm.delete(object)
                 }
                 continuation.resume()
-            }catch {
+            } catch {
                 continuation.resume(throwing: error)
             }
         }
     }
+
 
 
 }

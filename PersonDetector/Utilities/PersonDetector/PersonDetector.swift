@@ -61,11 +61,7 @@ final class PersonDetector: PersonDetectorProtocol {
                 let boxes : [Float] = try interpreter.output(at: 0).data.toArray(type: Float.self)
                 let confidences  : [Float] = try interpreter.output(at: 1).data.toArray(type: Float.self)
                 
-                
-                // Append başlangıçta küçük bir kapasiteyle başlar eleman eklendikçe resize yapılır. Büyük döngülerde çok maliyete sebep
-                // reserveCapacity ile append hızlandırılabilir. (Boyutu önceden belirleme)
-                // filter : her eleman için koşulu test eder true dönenleri yeni diziye ekler.
-                // lazy : Normalde işlemler sırayla hemen uygulanır. Lazy kullanıldığında ise zincirdeki işlemler birleştirilir yani her bir eleman üzerinde sadece ihtiyaç duyulduğunda işlem yapılır. Gereksiz bellek kullanımını engeller. Büyük dizilerde ve zincirli işlemlerde hızlı
+            
                 
                 let detections : [Detection] = self.filterDetections(boxes: boxes, confidences: confidences)
                                 
@@ -87,7 +83,7 @@ final class PersonDetector: PersonDetectorProtocol {
         }
         let endTime = Date()
         let duration = endTime.timeIntervalSince(startTime)
-        print("Süre: \(duration) saniye")
+        print("Detect Süre: \(duration) saniye") // 0.38 sn civarı
 
         return result
     }
@@ -105,6 +101,11 @@ final class PersonDetector: PersonDetectorProtocol {
 
     
     private func filterDetections(boxes : [Float], confidences : [Float]) -> [Detection]{
+        // Append başlangıçta küçük bir kapasiteyle başlar eleman eklendikçe resize yapılır. Büyük döngülerde çok maliyete sebep
+        // reserveCapacity ile append hızlandırılabilir. (Boyutu önceden belirleme)
+        // filter : her eleman için koşulu test eder true dönenleri yeni diziye ekler.
+        // lazy : Normalde işlemler sırayla hemen uygulanır. Lazy kullanıldığında ise zincirdeki işlemler birleştirilir yani her bir eleman üzerinde sadece ihtiyaç duyulduğunda işlem yapılır. Gereksiz bellek kullanımını engeller. Büyük dizilerde ve zincirli işlemlerde hızlı
+        
         let detections : [Detection] = confidences.lazy.enumerated().filter{$1 > confidenceThreshold}.map { index, confidence in
             let box =  Array(boxes[index * 4..<index * 4 + 4])
             

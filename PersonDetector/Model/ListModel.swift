@@ -16,11 +16,11 @@ final class ListModel : Object{
      case imageData = "image_data"
  }*/
     @Persisted(primaryKey: true) var _id: ObjectId
-    @Persisted var date: String
+    @Persisted var date: Date
     @Persisted var imageData : Data
     @Persisted var isPersonDetected : Bool
     
-    convenience init( date: String, imageData: Data , isPersonDetected: Bool) {
+    convenience init( date: Date, imageData: Data , isPersonDetected: Bool) {
         self.init()
         self.date = date
         self.imageData = imageData
